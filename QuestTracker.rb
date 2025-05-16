@@ -6,13 +6,13 @@ TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    # Dark blue for top gradient
 BOTTOM_COLOR = Gosu::Color.new(0xFF16213E) # Slightly lighter blue for bottom gradient
 BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) # Blue for buttons
 TEXT_COLOR = Gosu::Color.new(0xFFE94560)   # Pinkish-red for text
-HIGHLIGHT_COLOR = Gosu::Color.new(0xAA533483)   # Purple for highlighted items
+HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483)   # Purple for highlighted items
 TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)    # Semi-transparent white for text backgrounds
 TEXT_FIELD_COLOR = Gosu::Color.new(0x880F3460) # Semi-transparent blue for text fields
 
 # Z-order constants for drawing layers
 module ZOrder
-  BACKGROUND, TEXT, BUTTONS, HIGHLIGHT = *0..3
+  BACKGROUND, TEXT, BUTTONS = *0..2
 end
 # Quest class representing a single quest with its attributes
 class Quest
@@ -144,7 +144,7 @@ end
 end
 
   # Draw a list of quests with a title
-  def draw_quest_list(quests, title, y_start = TOP_MARGIN + 60)
+def draw_quest_list(quests, title, y_start = TOP_MARGIN + 60)
   @title_font.draw_text(title, LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
   
   if quests.empty?
@@ -153,26 +153,29 @@ end
   end
 
   y = y_start
+  quest_height = 70 # Fixed height for each quest entry
   i = 0
   while i < quests.length
     quest = quests[i]
+    entry_top = y
     
-    # Highlight if selected
+    # Draw highlight behind text if selected
     if quest == @selected_quest
-      Gosu.draw_rect(LEFT_MARGIN, y - 5, width - 2 * LEFT_MARGIN, 60, HIGHLIGHT_COLOR, ZOrder::HIGHLIGHT)
+      Gosu.draw_rect(LEFT_MARGIN, entry_top, 
+                    width - 2 * LEFT_MARGIN, quest_height, 
+                    HIGHLIGHT_COLOR, ZOrder::BUTTONS - 1)
     end
     
-    # Draw quest number and name
+    # Draw quest text
     text = "#{i + 1}. #{quest.name}"
-    @font.draw_text(text, LEFT_MARGIN, y, ZOrder::TEXT)
+    @font.draw_text(text, LEFT_MARGIN, y + 10, ZOrder::TEXT)
     y += 30
     
     # Draw details with wrapping
     details = "Difficulty: #{quest.difficulty} - Reward: #{quest.reward}"
     y = wrap_text(details, LEFT_MARGIN, y, width - 2 * LEFT_MARGIN)
     
-    # Add extra space between quests
-    y += 10
+    y = entry_top + quest_height # Ensure consistent spacing
     i += 1
   end
   
@@ -360,68 +363,41 @@ end
 
   # Handle clicks on quest lists
   def handle_quest_list_click
-    quests = []
-    case @current_view
-    when :active_quests
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :Active || quest.status == :NotStarted
-          quests << quest
-        end
-        i += 1
-      end
-    when :completed_quests
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :Completed
-          quests << quest
-        end
-        i += 1
-      end
-    when :accept_quest
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :NotStarted
-          quests << quest
-        end
-        i += 1
-      end
-    when :complete_quest
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :Active
-          quests << quest
-        end
-        i += 1
-      end
-    end
-    
-    y_start = TOP_MARGIN + 60
-    i = 0
-    while i < quests.length
-      if area_clicked(LEFT_MARGIN, y_start + 30 * i - 5, 
-                      width - LEFT_MARGIN, y_start + 30 * (i + 1) - 5)
-        @selected_quest = quests[i]
-        
-        case @current_view
-        when :accept_quest
-          quests[i].status = :Active
-          show_message(quests[i].name + " accepted!")
-          @current_view = :main_menu
-        when :complete_quest
-          quests[i].status = :Completed
-          show_message(quests[i].name + " completed!")
-          @current_view = :main_menu
-        end
-        break
-      end
-      i += 1
-    end
+  quests = case @current_view
+    when :active_quests then @quests.select { |q| q.status == :Active }
+    when :completed_quests then @quests.select { |q| q.status == :Completed }
+    when :accept_quest then @quests.select { |q| q.status == :NotStarted }
+    when :complete_quest then @quests.select { |q| q.status == :Active }
+    else []
   end
+  
+  return if quests.empty?
+  
+  y_start = TOP_MARGIN + 60
+  quest_height = 70 # Must match draw_quest_list value
+  i = 0
+  while i < quests.length
+    top = y_start + (quest_height * i)
+    bottom = top + quest_height
+    
+    if area_clicked(LEFT_MARGIN, top, width - LEFT_MARGIN, bottom)
+      @selected_quest = quests[i]
+      
+      case @current_view
+      when :accept_quest
+        quests[i].status = :Active
+        show_message("#{quests[i].name} accepted!")
+        @current_view = :main_menu
+      when :complete_quest
+        quests[i].status = :Completed
+        show_message("#{quests[i].name} completed!")
+        @current_view = :main_menu
+      end
+      break
+    end
+    i += 1
+  end
+end
 
   # Handle clicks on the create quest screen (stubbed)
   def handle_create_quest_click
