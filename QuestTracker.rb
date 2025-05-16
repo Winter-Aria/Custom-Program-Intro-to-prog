@@ -1,19 +1,27 @@
 require 'gosu'
 require 'json'
 
-# Color constants for the UI
-TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    # Dark blue for top gradient
-BOTTOM_COLOR = Gosu::Color.new(0xFF16213E) # Slightly lighter blue for bottom gradient
-BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) # Blue for buttons
-TEXT_COLOR = Gosu::Color.new(0xFFE94560)   # Pinkish-red for text
-HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483)   # Purple for highlighted items
-TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)    # Semi-transparent white for text backgrounds
-TEXT_FIELD_COLOR = Gosu::Color.new(0x880F3460) # Semi-transparent blue for text fields
+#==============================================================
+#Constants Section
+#==============================================================
+
+TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    #Top Background gradient colour
+BOTTOM_COLOR = Gosu::Color.new(0xFF16213E) # Bottom Background gradient colour
+BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) #  Button  colour
+TEXT_COLOR = Gosu::Color.new(0xFFE94560)   #  Text colour
+HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483)   # Highlight colour
+TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)    #  Text background colour
+TEXT_FIELD_COLOR = Gosu::Color.new(0x880F3460) # text fields colour
 
 # Z-order constants for drawing layers
 module ZOrder
   BACKGROUND, TEXT, BUTTONS = *0..2
 end
+
+#==============================================================
+# Data Section
+#==============================================================
+
 # Quest class representing a single quest with its attributes
 class Quest
   attr_accessor :name, :description, :difficulty, :reward, :status
@@ -38,8 +46,13 @@ class Quest
   end
 end
 
+#==============================================================
+# Main Application Section
+#==============================================================
+
 # Main application window class
 class QuestTracker < Gosu::Window
+
   # UI constants
   BUTTON_WIDTH = 200
   BUTTON_HEIGHT = 40
@@ -48,18 +61,37 @@ class QuestTracker < Gosu::Window
   TOP_MARGIN = 50
   TEXT_OFFSET = 10
 
+  #==========================================================
+  # Initialization and main methods
+  #==========================================================
+
+# Initialize the window and load resources
   def initialize
     super 1024, 768
     self.caption = "Quest Tracking System"
     @font = Gosu::Font.new(15, name: "PressStart2P-Regular.ttf")          
     @title_font = Gosu::Font.new(30, name: "PressStart2P-Regular.ttf")    
-    @quests = []                        # Array to store all quests
-    @current_view = :main_menu          # Current screen view
-    @selected_quest = nil               # Currently selected quest
-    @message = ""                       # Temporary message to display
-    @message_time = 0                   # When the message should disappear
-    load_quests_from_file('quests.json') # Load saved quests
+    @quests = []                       
+    @current_view = :main_menu          
+    @selected_quest = nil               
+    @message = ""                       
+    @message_time = 0                   
+    load_quests_from_file('quests.json') 
+    @bgm = Gosu::Song.new("Sounds/BackgroundMusic.mp3")
+    @bgm.volume = 0.2  
+    @bgm.play(true)  
+
+      # Load sound effects
+    @select_sound = Gosu::Sample.new("Sounds/Select.wav")
+    @accept_quest_sound = Gosu::Sample.new("Sounds/AcceptQuest.wav")
+    @complete_quest_sound = Gosu::Sample.new("Sounds/CompleteQuest.wav")
+    @save_file_sound = Gosu::Sample.new("Sounds/SaveFile.wav")
   end
+
+ #===========================================================
+ #Data Management Section
+ #===========================================================
+
 
   # Load quests from a JSON file
   def load_quests_from_file(file_name)
@@ -94,6 +126,10 @@ class QuestTracker < Gosu::Window
     File.write(file_name, JSON.pretty_generate(quest_data))
     show_message("Progress saved!")
   end
+
+  #===========================================================
+  # UI and Drawing Section
+  #===========================================================
 
   # Display a temporary message
   def show_message(text)
@@ -153,7 +189,7 @@ def draw_quest_list(quests, title, y_start = TOP_MARGIN + 60)
   end
 
   y = y_start
-  quest_height = 70 # Fixed height for each quest entry
+  quest_height = 70 
   i = 0
   while i < quests.length
     quest = quests[i]
@@ -167,15 +203,15 @@ def draw_quest_list(quests, title, y_start = TOP_MARGIN + 60)
     end
     
     # Draw quest text
-    text = "#{i + 1}. #{quest.name}"
+    text = (i + 1).to_s + ". " + quest.name
     @font.draw_text(text, LEFT_MARGIN, y + 10, ZOrder::TEXT)
     y += 30
     
     # Draw details with wrapping
-    details = "Difficulty: #{quest.difficulty} - Reward: #{quest.reward}"
+    details = "Difficulty: " + quest.difficulty.to_s + " - Reward: " + quest.reward.to_s
     y = wrap_text(details, LEFT_MARGIN, y, width - 2 * LEFT_MARGIN)
     
-    y = entry_top + quest_height # Ensure consistent spacing
+    y = entry_top + quest_height
     i += 1
   end
   
@@ -188,7 +224,7 @@ def wrap_text(text, x, y, max_width)
   i = 0
   while i < words.length
     word = words[i]
-    test_line = current_line.empty? ? word : "#{current_line} #{word}"
+    test_line = current_line.empty? ? word : current_line + " " + word
     if @font.text_width(test_line) <= max_width
       current_line = test_line
     else
@@ -210,6 +246,9 @@ def wrap_text(text, x, y, max_width)
 end
 
   # Draw the create quest screen (stubbed)
+  # This is a placeholder for the quest creation UI 
+  # and will need to be implemented with actual input handling
+  # and quest creation logic. 
   def draw_create_quest
     @title_font.draw_text("Create New Quest", LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
     
@@ -221,8 +260,8 @@ end
     @font.draw_text("Difficulty (1-5):", LEFT_MARGIN, y, ZOrder::TEXT)
     y += 30
     @font.draw_text("Reward:", LEFT_MARGIN, y, ZOrder::TEXT)
-    
-    # Draw buttons (functionality stubbed)
+  
+
     draw_button("Create", LEFT_MARGIN, y + 50)
     draw_button("Cancel", LEFT_MARGIN + BUTTON_WIDTH + BUTTON_MARGIN, y + 50)
   end
@@ -240,6 +279,10 @@ end
       @font.draw_text(@message, x, height - 50, ZOrder::TEXT, 1.0, 1.0, Gosu::Color::YELLOW)
     end
   end
+  
+  #============================================================
+  # Drawing Methods
+  #============================================================
 
   # Main draw method
   def draw
@@ -304,6 +347,10 @@ end
     end
   end
 
+  #============================================================
+  # Input Handling Section
+  #============================================================
+
   # Handle mouse button down events
   def button_down(id)
     case id
@@ -327,6 +374,7 @@ end
     unless @current_view == :main_menu
       if area_clicked(width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20, 
                       width - LEFT_MARGIN, height - 20)
+        @select_sound.play(0.6)
         @current_view = :main_menu
         @selected_quest = nil
       end
@@ -346,11 +394,13 @@ end
   i = 0
   while i < options.length
     if area_clicked(button_x, button_y, button_x + BUTTON_WIDTH, button_y + BUTTON_HEIGHT)
+      @select_sound.play(0.6)
       option = options[i]
       if option == :exit
         close
       elsif option == :save_progress
         save_progress_to_file('quests.json')
+        @save_file_sound.play(0.6)
       else
         @current_view = option
       end
@@ -364,17 +414,17 @@ end
   # Handle clicks on quest lists
   def handle_quest_list_click
   quests = case @current_view
-    when :active_quests then @quests.select { |q| q.status == :Active }
-    when :completed_quests then @quests.select { |q| q.status == :Completed }
-    when :accept_quest then @quests.select { |q| q.status == :NotStarted }
-    when :complete_quest then @quests.select { |q| q.status == :Active }
+    when :active_quests then @quests.select { |quest| quest.status == :Active }
+    when :completed_quests then @quests.select { |quest| quest.status == :Completed }
+    when :accept_quest then @quests.select { |quest| quest.status == :NotStarted }
+    when :complete_quest then @quests.select { |quest| quest.status == :Active }
     else []
   end
   
   return if quests.empty?
   
   y_start = TOP_MARGIN + 60
-  quest_height = 70 # Must match draw_quest_list value
+  quest_height = 70 
   i = 0
   while i < quests.length
     top = y_start + (quest_height * i)
@@ -382,15 +432,18 @@ end
     
     if area_clicked(LEFT_MARGIN, top, width - LEFT_MARGIN, bottom)
       @selected_quest = quests[i]
+      @select_sound.play(0.6)
       
       case @current_view
       when :accept_quest
+        @accept_quest_sound.play(0.6) 
         quests[i].status = :Active
-        show_message("#{quests[i].name} accepted!")
+        show_message(quests[i].name + " accepted!")
         @current_view = :main_menu
       when :complete_quest
         quests[i].status = :Completed
-        show_message("#{quests[i].name} completed!")
+        @complete_quest_sound.play(0.6)
+        show_message(quests[i].name + " completed!")
         @current_view = :main_menu
       end
       break
@@ -429,7 +482,9 @@ QuestTracker.new.show
 
 
 # TODO:
-# - Implement quest creation functionality
-# - Add Audio feedback for button clicks
-# - Implement quest filtering and sorting
+# - Implement quest creation functionality 
+
+#Stretch goals:
+# - Add a search bar for quests
+# - Implement quest filtering and sorting 
 # - Add Icons for quest status?
