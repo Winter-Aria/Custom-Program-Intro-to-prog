@@ -18,7 +18,7 @@
     "description": "Collect 10 medicinal herbs for the village healer.",
     "difficulty": 1,
     "reward": "100 Gold",
-    "status": "Completed"
+    "status": "NotStarted"
   },
   {
     "name": "Deliver the Package",
@@ -32,6 +32,6 @@
     "description": "Answer the sphinx's riddle to gain access to the ancient temple.",
     "difficulty": 4,
     "reward": "Ancient Artifact",
-    "status": "Completed"
+    "status": "NotStarted"
   }
 ]

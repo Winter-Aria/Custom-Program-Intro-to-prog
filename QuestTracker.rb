@@ -69,7 +69,7 @@ class QuestTracker < Gosu::Window
   def initialize
     super 1024, 768
     self.caption = "Quest Tracking System"
-    @font = Gosu::Font.new(15, name: "PressStart2P-Regular.ttf")          
+    @font = Gosu::Font.new(20, name: "PressStart2P-Regular.ttf")          
     @title_font = Gosu::Font.new(30, name: "PressStart2P-Regular.ttf")    
     @quests = []                       
     @current_view = :main_menu          
@@ -86,7 +86,20 @@ class QuestTracker < Gosu::Window
     @accept_quest_sound = Gosu::Sample.new("Sounds/AcceptQuest.wav")
     @complete_quest_sound = Gosu::Sample.new("Sounds/CompleteQuest.wav")
     @save_file_sound = Gosu::Sample.new("Sounds/SaveFile.wav")
+
+   # Load menu icons
+    @menu_icons = {
+    active: Gosu::Image.new("Images/active_quests.png"),
+    completed: Gosu::Image.new("Images/completed_quests.png"),
+    accept: Gosu::Image.new("Images/accept_quest.png"),
+    complete: Gosu::Image.new("Images/complete_quest.png"),
+    create: Gosu::Image.new("Images/new_quest.png"),
+    save: Gosu::Image.new("Images/save.png"),
+    exit: Gosu::Image.new("Images/exit.png")
+   }
+
   end
+
 
  #===========================================================
  #Data Management Section
@@ -162,18 +175,28 @@ end
   button_x = (width - BUTTON_WIDTH) / 2
   
   options = [
-    "View Active Quests", 
-    "View Completed Quests", 
-    "Accept a New Quest",
-    "Complete a Quest",
-    "Create a New Quest",
-    "Save Progress",
-    "Exit"
+    { text: "View Active Quests", icon: :active },
+    { text: "View Completed Quests", icon: :completed },
+    { text: "Accept a New Quest", icon: :accept },
+    { text: "Complete a Quest", icon: :complete },
+    { text: "Create a New Quest", icon: :create },
+    { text: "Save Progress", icon: :save },
+    { text: "Exit", icon: :exit }
   ]
   
   i = 0
   while i < options.length
-    draw_button(options[i], button_x, button_y)
+    icon = @menu_icons[options[i][:icon]]
+    icon.draw(
+      button_x - 60,                     
+      button_y + (BUTTON_HEIGHT - icon.height * 0.1) / 2,  
+      ZOrder::BUTTONS,                    
+      0.1, 0.1                           
+    )
+    
+    # Draw button text
+    draw_button(options[i][:text], button_x, button_y)
+    
     button_y += BUTTON_HEIGHT + BUTTON_MARGIN
     i += 1
   end
@@ -190,26 +213,31 @@ def draw_quest_list(quests, title, y_start = TOP_MARGIN + 60)
 
   y = y_start
   quest_height = 70 
+  icon_size = 20
+  icon_padding = 10
+  
   i = 0
   while i < quests.length
     quest = quests[i]
     entry_top = y
     
-    # Draw highlight behind text if selected
+    # Draw highlight if selected
     if quest == @selected_quest
       Gosu.draw_rect(LEFT_MARGIN, entry_top, 
                     width - 2 * LEFT_MARGIN, quest_height, 
                     HIGHLIGHT_COLOR, ZOrder::BUTTONS - 1)
     end
     
-    # Draw quest text
+    
+    # Draw quest text (offset to right of icon)
+    text_x = LEFT_MARGIN  
     text = (i + 1).to_s + ". " + quest.name
-    @font.draw_text(text, LEFT_MARGIN, y + 10, ZOrder::TEXT)
+    @font.draw_text(text, text_x, y + 10, ZOrder::TEXT)
     y += 30
     
-    # Draw details with wrapping
+    # Draw details with wrapping (offset same as name)
     details = "Difficulty: " + quest.difficulty.to_s + " - Reward: " + quest.reward.to_s
-    y = wrap_text(details, LEFT_MARGIN, y, width - 2 * LEFT_MARGIN)
+    y = wrap_text(details, text_x, y, width - 2 * LEFT_MARGIN )
     
     y = entry_top + quest_height
     i += 1
@@ -487,4 +515,3 @@ QuestTracker.new.show
 #Stretch goals:
 # - Add a search bar for quests
 # - Implement quest filtering and sorting 
-# - Add Icons for quest status?
