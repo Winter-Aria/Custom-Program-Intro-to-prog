@@ -18,21 +18,21 @@
     "description": "Collect 10 medicinal herbs for the village healer.",
     "difficulty": 1,
     "reward": "100 Gold",
-    "status": "Completed"
+    "status": "Active"
   },
   {
     "name": "Deliver the Package",
     "description": "Take the sealed package to the merchant in the next town.",
     "difficulty": 2,
     "reward": "250 Gold",
-    "status": "Completed"
+    "status": "Active"
   },
   {
     "name": "Solve the Riddle",
     "description": "Answer the sphinx's riddle to gain access to the ancient temple.",
     "difficulty": 4,
     "reward": "Ancient Artifact",
-    "status": "Completed"
+    "status": "Active"
   },
   {
     "name": "Defend the Castle",
@@ -49,13 +49,94 @@
     "status": "NotStarted"
   },
   {
+    "name": "Rescue the Villagers",
+    "description": "Save the villagers trapped in the forest by the bandits.",
+    "difficulty": 3,
+    "reward": "500 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Slay the Dragon",
+    "description": "Defeat the dragon terrorizing the northern mountains.",
+    "difficulty": 5,
+    "reward": "2000 Gold and Dragon Scale Armor",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Gather Herbs",
+    "description": "Collect 10 medicinal herbs for the village healer.",
+    "difficulty": 1,
+    "reward": "100 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Deliver the Package",
+    "description": "Take the sealed package to the merchant in the next town.",
+    "difficulty": 2,
+    "reward": "250 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Rescue the Villagers",
+    "description": "Save the villagers trapped in the forest by the bandits.",
+    "difficulty": 3,
+    "reward": "500 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Slay the Dragon",
+    "description": "Defeat the dragon terrorizing the northern mountains.",
+    "difficulty": 5,
+    "reward": "2000 Gold and Dragon Scale Armor",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Gather Herbs",
+    "description": "Collect 10 medicinal herbs for the village healer.",
+    "difficulty": 1,
+    "reward": "100 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Deliver the Package",
+    "description": "Take the sealed package to the merchant in the next town.",
+    "difficulty": 2,
+    "reward": "250 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Rescue the Villagers",
+    "description": "Save the villagers trapped in the forest by the bandits.",
+    "difficulty": 3,
+    "reward": "500 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Slay the Dragon",
+    "description": "Defeat the dragon terrorizing the northern mountains.",
+    "difficulty": 5,
+    "reward": "2000 Gold and Dragon Scale Armor",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Gather Herbs",
+    "description": "Collect 10 medicinal herbs for the village healer.",
+    "difficulty": 1,
+    "reward": "100 Gold",
+    "status": "NotStarted"
+  },
+  {
+    "name": "Deliver the Package",
+    "description": "Take the sealed package to the merchant in the next town.",
+    "difficulty": 2,
+    "reward": "250 Gold",
+    "status": "NotStarted"
+  },
+  {
     "name": "Escort the Caravan",
     "description": "Protect the merchant caravan on its journey through the desert.",
     "difficulty": 3,
     "reward": "300 Gold",
     "status": "NotStarted"
   }
-
-
-  
 ]

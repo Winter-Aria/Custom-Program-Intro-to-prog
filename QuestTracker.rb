@@ -71,6 +71,7 @@ class QuestTracker < Gosu::Window
     self.caption = "Quest Tracking System"
     @font = Gosu::Font.new(20, name: "PressStart2P-Regular.ttf")          
     @title_font = Gosu::Font.new(30, name: "PressStart2P-Regular.ttf")    
+    @text = Gosu::TextInput.new
     @quests = []                       
     @current_view = :main_menu          
     @selected_quest = nil               
@@ -511,6 +512,7 @@ QuestTracker.new.show
 
 # TODO:
 # - Implement quest creation functionality 
+# - Add quest pages to handle large number of quests
 
 #Stretch goals:
 # - Add a search bar for quests
