@@ -2,15 +2,15 @@ require 'gosu'
 require 'json'
 
 #==============================================================
-#Constants Section
+# Constants Section
 #==============================================================
 
-TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    #Top Background gradient colour
+TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    # Top Background gradient colour
 BOTTOM_COLOR = Gosu::Color.new(0xFF16213E) # Bottom Background gradient colour
-BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) #  Button  colour
-TEXT_COLOR = Gosu::Color.new(0xFFE94560)   #  Text colour
-HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483)   # Highlight colour
-TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)    #  Text background colour
+BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) # Button colour
+TEXT_COLOR = Gosu::Color.new(0xFFE94560)   # Text colour
+HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483) # Highlight colour
+TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)   # Text background colour
 TEXT_FIELD_COLOR = Gosu::Color.new(0x880F3460) # text fields colour
 
 # Z-order constants for drawing layers
@@ -52,7 +52,6 @@ end
 
 # Main application window class
 class QuestTracker < Gosu::Window
-
   # UI constants
   BUTTON_WIDTH = 200
   BUTTON_HEIGHT = 40
@@ -60,12 +59,13 @@ class QuestTracker < Gosu::Window
   LEFT_MARGIN = 50
   TOP_MARGIN = 50
   TEXT_OFFSET = 10
+  FILTER_CONTROLS_HEIGHT = 80  # Added constant for filter controls area height
 
   #==========================================================
   # Initialization and main methods
   #==========================================================
 
-# Initialize the window and load resources
+  # Initialize the window and load resources
   def initialize
     super 1024, 768
     self.caption = "Quest Tracking System"
@@ -82,30 +82,49 @@ class QuestTracker < Gosu::Window
     @bgm.volume = 0.2  
     @bgm.play(true)  
 
-      # Load sound effects
+    # Load sound effects
     @select_sound = Gosu::Sample.new("Sounds/Select.wav")
     @accept_quest_sound = Gosu::Sample.new("Sounds/AcceptQuest.wav")
     @complete_quest_sound = Gosu::Sample.new("Sounds/CompleteQuest.wav")
     @save_file_sound = Gosu::Sample.new("Sounds/SaveFile.wav")
 
-   # Load menu icons
+    # Load menu icons
     @menu_icons = {
-    active: Gosu::Image.new("Images/active_quests.png"),
-    completed: Gosu::Image.new("Images/completed_quests.png"),
-    accept: Gosu::Image.new("Images/accept_quest.png"),
-    complete: Gosu::Image.new("Images/complete_quest.png"),
-    create: Gosu::Image.new("Images/new_quest.png"),
-    save: Gosu::Image.new("Images/save.png"),
-    exit: Gosu::Image.new("Images/exit.png")
-   }
+      active: Gosu::Image.new("Images/active_quests.png"),
+      completed: Gosu::Image.new("Images/completed_quests.png"),
+      accept: Gosu::Image.new("Images/accept_quest.png"),
+      complete: Gosu::Image.new("Images/complete_quest.png"),
+      create: Gosu::Image.new("Images/new_quest.png"),
+      save: Gosu::Image.new("Images/save.png"),
+      exit: Gosu::Image.new("Images/exit.png")
+    }
+    @current_page = 0
+    @quests_per_page = 5
 
+    @name_input = Gosu::TextInput.new
+    @desc_input = Gosu::TextInput.new
+    @diff_input = Gosu::TextInput.new
+    @reward_input = Gosu::TextInput.new
+    @active_input = nil
+    @search_input = Gosu::TextInput.new
+    @search_active = false
+
+    @input_fields = {
+      name: { x: LEFT_MARGIN + 350, y: TOP_MARGIN + 60, width: 300, height: 30 },
+      desc: { x: LEFT_MARGIN + 350, y: TOP_MARGIN + 90, width: 300, height: 30 },
+      diff: { x: LEFT_MARGIN + 350, y: TOP_MARGIN + 120, width: 300, height: 30 },
+      reward: { x: LEFT_MARGIN + 350, y: TOP_MARGIN + 150, width: 300, height: 30 }
+    }
+    
+    # Filter and sort variables
+    @filter_difficulty = nil
+    @sort_by = :name
+    @sort_order = :asc
   end
 
-
- #===========================================================
- #Data Management Section
- #===========================================================
-
+  #===========================================================
+  # Data Management Section
+  #===========================================================
 
   # Load quests from a JSON file
   def load_quests_from_file(file_name)
@@ -142,6 +161,99 @@ class QuestTracker < Gosu::Window
   end
 
   #===========================================================
+  # Filtering and Sorting Methods
+  #===========================================================
+  
+  def filter_quests(quests)
+    filtered = []
+    i = 0
+    while i < quests.length
+      quest = quests[i]
+      
+      # Apply status filter based on current view
+      status_match = case @current_view
+                    when :active_quests then quest.status == :Active
+                    when :completed_quests then quest.status == :Completed
+                    when :accept_quest then quest.status == :NotStarted
+                    when :complete_quest then quest.status == :Active
+                    else true
+                    end
+      
+      # Apply difficulty filter if set
+      difficulty_match = @filter_difficulty.nil? || quest.difficulty == @filter_difficulty
+      
+      # Apply search filter if search term exists
+      search_match = true
+      if !@search_input.text.empty?
+        search_term = @search_input.text.downcase
+        search_match = quest.name.downcase.include?(search_term) ||
+                       quest.description.downcase.include?(search_term) ||
+                       quest.reward.downcase.include?(search_term) ||
+                       quest.difficulty.to_s.downcase.include?(search_term)
+      end
+      
+      if status_match && difficulty_match && search_match
+        filtered << quest
+      end
+      i += 1
+    end
+    filtered
+  end
+  
+  def sort_quests(quests)
+    return quests if quests.empty?
+    
+    sorted = quests.dup
+    
+    # Bubble sort implementation with while loops
+    i = 0
+    while i < sorted.length - 1
+      j = 0
+      while j < sorted.length - i - 1
+        a = sorted[j]
+        b = sorted[j + 1]
+        swap = false
+        
+        case @sort_by
+        when :name
+          comparison = a.name.downcase <=> b.name.downcase
+        when :difficulty
+          comparison = a.difficulty <=> b.difficulty
+        when :reward
+          comparison = a.reward.downcase <=> b.reward.downcase
+        else
+          comparison = 0
+        end
+        
+        if @sort_order == :asc
+          swap = comparison > 0
+        else
+          swap = comparison < 0
+        end
+        
+        if swap
+          sorted[j], sorted[j + 1] = sorted[j + 1], sorted[j]
+        end
+        
+        j += 1
+      end
+      i += 1
+    end
+    
+    sorted
+  end
+  
+  def get_visible_quests
+    # First filter by status (based on current view)
+    filtered = filter_quests(@quests)
+    
+    # Then sort
+    sorted = sort_quests(filtered)
+    
+    sorted
+  end
+
+  #===========================================================
   # UI and Drawing Section
   #===========================================================
 
@@ -152,147 +264,277 @@ class QuestTracker < Gosu::Window
   end
 
   # Draw a button with text
-def draw_button(text, x, y, width = nil, height = BUTTON_HEIGHT)
-  text_width = @font.text_width(text)
-  button_width = width || text_width + 40  
-  
-  # Draw button background (behind text)
-  Gosu.draw_rect(x, y, button_width, height, BUTTON_COLOR, ZOrder::BUTTONS - 1)
-  
-  # Draw button text (on top of background)
-  text_x = x + (button_width - text_width) / 2
-  text_y = y + (height - @font.height) / 2
-  @font.draw_text(text, text_x, text_y, ZOrder::BUTTONS, 1.0, 1.0, TEXT_COLOR)
-  
-  button_width
-end
+  def draw_button(text, x, y, width = nil, height = BUTTON_HEIGHT)
+    text_width = @font.text_width(text)
+    button_width = width || text_width + 40  
+    
+    # Draw button background (behind text)
+    Gosu.draw_rect(x, y, button_width, height, BUTTON_COLOR, ZOrder::BUTTONS - 1)
+    
+    # Draw button text (on top of background)
+    text_x = x + (button_width - text_width) / 2
+    text_y = y + (height - @font.height) / 2
+    @font.draw_text(text, text_x, text_y, ZOrder::BUTTONS, 1.0, 1.0, TEXT_COLOR)
+    
+    button_width
+  end
 
   # Draw the main menu screen
   def draw_main_menu
-  title_width = @title_font.text_width("Quest Tracking System")
-  @title_font.draw_text("Quest Tracking System", (width - title_width) / 2, TOP_MARGIN, ZOrder::TEXT)
-  
-  button_y = TOP_MARGIN + 80
-  button_x = (width - BUTTON_WIDTH) / 2
-  
-  options = [
-    { text: "View Active Quests", icon: :active },
-    { text: "View Completed Quests", icon: :completed },
-    { text: "Accept a New Quest", icon: :accept },
-    { text: "Complete a Quest", icon: :complete },
-    { text: "Create a New Quest", icon: :create },
-    { text: "Save Progress", icon: :save },
-    { text: "Exit", icon: :exit }
-  ]
-  
-  i = 0
-  while i < options.length
-    icon = @menu_icons[options[i][:icon]]
-    icon.draw(
-      button_x - 60,                     
-      button_y + (BUTTON_HEIGHT - icon.height * 0.1) / 2,  
-      ZOrder::BUTTONS,                    
-      0.1, 0.1                           
-    )
+    title_width = @title_font.text_width("Quest Tracking System")
+    @title_font.draw_text("Quest Tracking System", (width - title_width) / 2, TOP_MARGIN, ZOrder::TEXT)
     
-    # Draw button text
-    draw_button(options[i][:text], button_x, button_y)
+    button_y = TOP_MARGIN + 80
+    button_x = (width - BUTTON_WIDTH) / 2
     
-    button_y += BUTTON_HEIGHT + BUTTON_MARGIN
-    i += 1
+    options = [
+      { text: "View Active Quests", icon: :active },
+      { text: "View Completed Quests", icon: :completed },
+      { text: "Accept a New Quest", icon: :accept },
+      { text: "Complete a Quest", icon: :complete },
+      { text: "Create a New Quest", icon: :create },
+      { text: "Save Progress", icon: :save },
+      { text: "Exit", icon: :exit }
+    ]
+    
+    i = 0
+    while i < options.length
+      icon = @menu_icons[options[i][:icon]]
+      icon.draw(
+        button_x - 60,                     
+        button_y + (BUTTON_HEIGHT - icon.height * 0.1) / 2,  
+        ZOrder::BUTTONS,                    
+        0.1, 0.1                           
+      )
+      
+      # Draw button text
+      draw_button(options[i][:text], button_x, button_y)
+      
+      button_y += BUTTON_HEIGHT + BUTTON_MARGIN
+      i += 1
+    end
   end
-end
 
   # Draw a list of quests with a title
-def draw_quest_list(quests, title, y_start = TOP_MARGIN + 60)
-  @title_font.draw_text(title, LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
-  
-  if quests.empty?
-    @font.draw_text("No quests available", LEFT_MARGIN, y_start, ZOrder::TEXT)
-    return y_start + 30
-  end
-
-  y = y_start
-  quest_height = 70 
-  icon_size = 20
-  icon_padding = 10
-  
-  i = 0
-  while i < quests.length
-    quest = quests[i]
-    entry_top = y
+  def draw_quest_list(quests, title, y_start = TOP_MARGIN + FILTER_CONTROLS_HEIGHT + 20)  # Increased starting y position
+    # Draw title
+    @title_font.draw_text(title, LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
     
-    # Draw highlight if selected
-    if quest == @selected_quest
-      Gosu.draw_rect(LEFT_MARGIN, entry_top, 
-                    width - 2 * LEFT_MARGIN, quest_height, 
-                    HIGHLIGHT_COLOR, ZOrder::BUTTONS - 1)
+    # Draw search and filter controls
+    draw_search_and_filter_controls(TOP_MARGIN + 40)
+    
+    visible_quests = get_visible_quests
+    
+    if visible_quests.empty?
+      @font.draw_text("No quests found matching criteria", LEFT_MARGIN, y_start, ZOrder::TEXT)
+      return y_start + 30
+    end
+
+    # Calculate pagination
+    total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
+    start_index = @current_page * @quests_per_page
+    end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
+
+    y = y_start
+    quest_height = 70 
+    
+    # Draw quests for current page
+    i = start_index
+    while i <= end_index
+      quest = visible_quests[i]
+      entry_top = y
+      
+      # Draw highlight if selected
+      if quest == @selected_quest
+        Gosu.draw_rect(LEFT_MARGIN, entry_top, 
+                      width - 2 * LEFT_MARGIN, quest_height, 
+                      HIGHLIGHT_COLOR, ZOrder::BUTTONS - 1)
+      end
+      
+      # Draw quest text
+      text_x = LEFT_MARGIN  
+      text = (i + 1).to_s + ". " + quest.name
+      @font.draw_text(text, text_x, y + 10, ZOrder::TEXT)
+      y += 30
+      
+      # Draw details with wrapping
+      details = "Difficulty: " + quest.difficulty.to_s + " - Reward: " + quest.reward.to_s
+      y = wrap_text(details, text_x, y, width - 2 * LEFT_MARGIN)
+      
+      y = entry_top + quest_height
+      i += 1
     end
     
+    # Draw pagination controls
+    draw_pagination_controls(y + 20, total_pages)
     
-    # Draw quest text (offset to right of icon)
-    text_x = LEFT_MARGIN  
-    text = (i + 1).to_s + ". " + quest.name
-    @font.draw_text(text, text_x, y + 10, ZOrder::TEXT)
-    y += 30
-    
-    # Draw details with wrapping (offset same as name)
-    details = "Difficulty: " + quest.difficulty.to_s + " - Reward: " + quest.reward.to_s
-    y = wrap_text(details, text_x, y, width - 2 * LEFT_MARGIN )
-    
-    y = entry_top + quest_height
-    i += 1
+    y
   end
-  
-  y
-end
 
-def wrap_text(text, x, y, max_width)
-  words = text.split(' ')
-  current_line = ''
-  i = 0
-  while i < words.length
-    word = words[i]
-    test_line = current_line.empty? ? word : current_line + " " + word
-    if @font.text_width(test_line) <= max_width
-      current_line = test_line
-    else
-      # Draw the current line
+  def draw_search_and_filter_controls(y)
+    # Draw sort controls first (at the top)
+    sort_x = LEFT_MARGIN
+    draw_button("Sort:", sort_x, y, 50, 30)
+    
+    # Sort options
+    sort_options = [
+      { text: "Name", value: :name },
+      { text: "Difficulty", value: :difficulty },
+      { text: "Reward", value: :reward }
+    ]
+    
+    i = 0
+    while i < sort_options.length
+      option = sort_options[i]
+      color = @sort_by == option[:value] ? HIGHLIGHT_COLOR : BUTTON_COLOR
+      Gosu.draw_rect(sort_x + 60 + (i * 100), y, 90, 30, color, ZOrder::BUTTONS - 1)
+      
+      # Add arrow indicator for sort order
+      arrow = ""
+      if @sort_by == option[:value]
+        arrow = @sort_order == :asc ? " ↑" : " ↓"
+      end
+      
+      @font.draw_text(option[:text] + arrow, sort_x + 65 + (i * 100), y + 5, ZOrder::BUTTONS)
+      i += 1
+    end
+    
+    # Draw search bar below sort controls
+    search_y = y + 40
+    search_width = 200
+    Gosu.draw_rect(LEFT_MARGIN, search_y, search_width, 30, TEXT_FIELD_COLOR, ZOrder::BUTTONS - 1)
+    
+    # Draw search text or placeholder
+    text = @search_input.text.empty? ? "Search..." : @search_input.text
+    text_color = @search_input.text.empty? ? Gosu::Color::GRAY : TEXT_COLOR
+    @font.draw_text(text, LEFT_MARGIN + 5, search_y + 5, ZOrder::TEXT, 1.0, 1.0, text_color)
+    
+    # Draw cursor if active
+    if @search_active && (Gosu.milliseconds / 500) % 2 == 0
+      cursor_x = LEFT_MARGIN + 5 + @font.text_width(@search_input.text[0...@search_input.caret_pos])
+      Gosu.draw_rect(cursor_x, search_y + 5, 2, @font.height - 10, TEXT_COLOR, ZOrder::TEXT)
+    end
+    
+    # Draw filter controls below search
+    filter_y = search_y + 40
+    filter_label_width = @font.text_width("Filter:")
+    draw_button("Filter:", LEFT_MARGIN, filter_y, 60, 30)
+    
+    # Difficulty filter buttons
+    diff_x = LEFT_MARGIN + 70
+    i = 0
+    while i <= 5
+      text = i == 0 ? "All" : i.to_s
+      color = @filter_difficulty == (i == 0 ? nil : i) ? HIGHLIGHT_COLOR : BUTTON_COLOR
+      Gosu.draw_rect(diff_x + (i * 40), filter_y, 35, 30, color, ZOrder::BUTTONS - 1)
+      @font.draw_text(text, diff_x + (i * 40) + 5, filter_y + 5, ZOrder::BUTTONS)
+      i += 1
+    end
+  end
+
+  def draw_pagination_controls(y, total_pages)
+    # Only draw controls if there are multiple pages
+    return if total_pages <= 1
+
+    # Draw page info
+    page_text = "Page #{@current_page + 1} of #{total_pages}"
+    text_width = @font.text_width(page_text)
+    @font.draw_text(page_text, (width - text_width) / 2, y, ZOrder::TEXT)
+
+    # Draw previous button (with increased spacing)
+    if @current_page > 0
+      draw_button("< Previous", width / 2 - 250, y + 40)  # Moved further left
+    end
+
+    # Draw next button (with increased spacing)
+    if @current_page < total_pages - 1
+      draw_button("Next >", width / 2 + 150, y + 40)  # Moved further right
+    end
+  end
+
+  def wrap_text(text, x, y, max_width)
+    words = text.split(' ')
+    current_line = ''
+    i = 0
+    while i < words.length
+      word = words[i]
+      test_line = current_line.empty? ? word : current_line + " " + word
+      if @font.text_width(test_line) <= max_width
+        current_line = test_line
+      else
+        # Draw the current line
+        @font.draw_text(current_line, x, y, ZOrder::TEXT)
+        y += @font.height
+        current_line = word
+      end
+      i += 1
+    end
+    
+    # Draw the last line
+    unless current_line.empty?
       @font.draw_text(current_line, x, y, ZOrder::TEXT)
       y += @font.height
-      current_line = word
     end
-    i += 1
+    
+    y
   end
-  
-  # Draw the last line
-  unless current_line.empty?
-    @font.draw_text(current_line, x, y, ZOrder::TEXT)
-    y += @font.height
-  end
-  
-  y
-end
 
-  # Draw the create quest screen (stubbed)
-  # This is a placeholder for the quest creation UI 
-  # and will need to be implemented with actual input handling
-  # and quest creation logic. 
+  # Draw the create quest screen
   def draw_create_quest
     @title_font.draw_text("Create New Quest", LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
     
-    y = TOP_MARGIN + 60
-    @font.draw_text("Name:", LEFT_MARGIN, y, ZOrder::TEXT)
-    y += 30
-    @font.draw_text("Description:", LEFT_MARGIN, y, ZOrder::TEXT)
-    y += 30
-    @font.draw_text("Difficulty (1-5):", LEFT_MARGIN, y, ZOrder::TEXT)
-    y += 30
-    @font.draw_text("Reward:", LEFT_MARGIN, y, ZOrder::TEXT)
-  
+    # Draw labels
+    @font.draw_text("Name:", LEFT_MARGIN, TOP_MARGIN + 60, ZOrder::TEXT)
+    @font.draw_text("Description:", LEFT_MARGIN, TOP_MARGIN + 90, ZOrder::TEXT)
+    @font.draw_text("Difficulty (1-5):", LEFT_MARGIN, TOP_MARGIN + 120, ZOrder::TEXT)
+    @font.draw_text("Reward:", LEFT_MARGIN, TOP_MARGIN + 150, ZOrder::TEXT)
+    
+    # Draw input fields
+    draw_input_field(@name_input, :name, "Enter quest name")
+    draw_input_field(@desc_input, :desc, "Enter description")
+    draw_input_field(@diff_input, :diff, "1-5")
+    draw_input_field(@reward_input, :reward, "Gold, items, etc.")
+    
+    # Draw buttons
+    draw_button("Create", LEFT_MARGIN, TOP_MARGIN + 200)
+    draw_button("Cancel", LEFT_MARGIN + BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 200)
+  end
 
-    draw_button("Create", LEFT_MARGIN, y + 50)
-    draw_button("Cancel", LEFT_MARGIN + BUTTON_WIDTH + BUTTON_MARGIN, y + 50)
+  def draw_input_field(text_input, field_key, placeholder)
+    field = @input_fields[field_key]
+    is_active = @active_input == field_key
+    
+    # Draw background
+    color = is_active ? TEXT_FIELD_COLOR : TEXT_FIELD_COLOR
+    Gosu.draw_rect(field[:x], field[:y], field[:width], field[:height], color, ZOrder::BUTTONS - 1)
+    
+    # Draw text or placeholder
+    text = text_input.text.empty? ? placeholder : text_input.text
+    text_color = text_input.text.empty? ? Gosu::Color::GRAY : TEXT_COLOR
+    
+    # Clip text if too long
+    text_width = @font.text_width(text)
+    if text_width > field[:width] - 10
+      visible_text = ""
+      i = text.length - 1
+      while i >= 0
+        test_text = "..." + text[i..-1]
+        if @font.text_width(test_text) <= field[:width] - 10
+          visible_text = test_text
+          break
+        end
+        i += 1
+      end
+      text = visible_text
+    end
+    
+    @font.draw_text(text, field[:x] + 5, field[:y] + 5, ZOrder::TEXT, 1.0, 1.0, text_color)
+    
+    # Draw cursor if active
+    if is_active && (Gosu.milliseconds / 500) % 2 == 0
+      cursor_x = field[:x] + 5 + @font.text_width(text_input.text[0...text_input.caret_pos])
+      Gosu.draw_rect(cursor_x, field[:y] + 5, 2, @font.height - 10, TEXT_COLOR, ZOrder::TEXT)
+    end
   end
 
   # Draw the gradient background
@@ -317,54 +559,18 @@ end
   def draw
     draw_background
     
-    case @current_view
-    when :main_menu
+    # Replace case statement with if-elsif chain
+    if @current_view == :main_menu
       draw_main_menu
-    when :active_quests
-      active_quests = []
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :Active  
-          active_quests << quest
-        end
-        i += 1
-      end
-      draw_quest_list(active_quests, "Active Quests")
-    when :completed_quests
-      completed_quests = []
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :Completed
-          completed_quests << quest
-        end
-        i += 1
-      end
-      draw_quest_list(completed_quests, "Completed Quests")
-    when :accept_quest
-      available_quests = []
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :NotStarted
-          available_quests << quest
-        end
-        i += 1
-      end
-      draw_quest_list(available_quests, "Available Quests")
-    when :complete_quest
-      active_quests = []
-      i = 0
-      while i < @quests.length
-        quest = @quests[i]
-        if quest.status == :Active
-          active_quests << quest
-        end
-        i += 1
-      end
-      draw_quest_list(active_quests, "Quests to Complete")
-    when :create_quest
+    elsif @current_view == :active_quests
+      draw_quest_list(@quests, "Active Quests")
+    elsif @current_view == :completed_quests
+      draw_quest_list(@quests, "Completed Quests")
+    elsif @current_view == :accept_quest
+      draw_quest_list(@quests, "Available Quests")
+    elsif @current_view == :complete_quest
+      draw_quest_list(@quests, "Quests to Complete")
+    elsif @current_view == :create_quest
       draw_create_quest
     end
     
@@ -382,117 +588,290 @@ end
 
   # Handle mouse button down events
   def button_down(id)
-    case id
-    when Gosu::MsLeft
+    if id == Gosu::MsLeft
       handle_mouse_click
+    elsif id == Gosu::KbEscape
+      if @search_active
+        @search_active = false
+        self.text_input = nil
+      elsif @current_view == :create_quest && @active_input
+        @active_input = nil
+        self.text_input = nil
+      end
+    elsif id == Gosu::KbTab && @current_view == :create_quest && @active_input
+      cycle_input_fields
+    end
+  end
+
+  def cycle_input_fields
+    fields = [:name, :desc, :diff, :reward]
+    current_index = -1
+
+    i = 0
+    while i < fields.size
+      if fields[i] == @active_input
+        current_index = i
+        break
+      end
+      i += 1
+    end
+
+    next_index = (current_index + 1) % fields.size
+    @active_input = fields[next_index]
+
+    if @active_input == :name 
+      self.text_input = @name_input
+    elsif @active_input == :desc 
+      self.text_input = @desc_input
+    elsif @active_input == :diff 
+      self.text_input = @diff_input
+    elsif @active_input == :reward 
+      self.text_input = @reward_input
     end
   end
 
   # Main mouse click handler
   def handle_mouse_click
-    case @current_view
-    when :main_menu
+    # Handle search input first
+    mouse_y = TOP_MARGIN + 40
+    
+    # Handle sort clicks (top row)
+    if @current_view != :main_menu && @current_view != :create_quest
+      sort_x = LEFT_MARGIN
+      sort_options = [:name, :difficulty, :reward]
+      
+      i = 0
+      while i < sort_options.length
+        if area_clicked(sort_x + 60 + (i * 100), mouse_y, 
+                       sort_x + 60 + (i * 100) + 90, mouse_y + 30)
+          if @sort_by == sort_options[i]
+            # Toggle sort order if clicking the same sort option
+            @sort_order = @sort_order == :asc ? :desc : :asc
+          else
+            # Default to ascending when changing sort field
+            @sort_by = sort_options[i]
+            @sort_order = :asc
+          end
+          @current_page = 0 # Reset to first page when changing sort
+          return
+        end
+        i += 1
+      end
+      
+      # Handle search input (middle row)
+      search_y = mouse_y + 40
+      if area_clicked(LEFT_MARGIN, search_y, LEFT_MARGIN + 250, search_y + 30)
+        @search_active = true
+        self.text_input = @search_input
+        @current_page = 0 # Reset to first page when searching
+        return
+      else
+        @search_active = false
+        self.text_input = nil
+      end
+      
+      # Handle filter clicks (bottom row)
+      filter_y = search_y + 40
+      diff_x = LEFT_MARGIN + 70
+      
+      i = 0
+      while i <= 5
+        if area_clicked(diff_x + (i * 40), filter_y, 
+                       diff_x + (i * 40) + 35, filter_y + 30)
+          @filter_difficulty = i == 0 ? nil : i
+          @current_page = 0 # Reset to first page when changing filter
+          return
+        end
+        i += 1
+      end
+    end
+
+    if @current_view == :main_menu
       handle_main_menu_click
-    when :active_quests, :completed_quests, :accept_quest, :complete_quest
+    elsif @current_view == :active_quests || @current_view == :completed_quests || @current_view == :accept_quest || @current_view == :complete_quest
       handle_quest_list_click
-    when :create_quest
+    elsif @current_view == :create_quest
       handle_create_quest_click
     end
     
-    # Handle back button
+    # Back button
     unless @current_view == :main_menu
       if area_clicked(width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20, 
-                      width - LEFT_MARGIN, height - 20)
+                     width - LEFT_MARGIN, height - 20)
         @select_sound.play(0.6)
         @current_view = :main_menu
         @selected_quest = nil
+        @filter_difficulty = nil # Reset filter when going back
+        @search_input.text = "" # Clear search
       end
     end
   end
 
   # Handle clicks on the main menu
   def handle_main_menu_click
-  button_y = TOP_MARGIN + 80
-  button_x = (width - BUTTON_WIDTH) / 2
-  
-  options = [
-    :active_quests, :completed_quests, :accept_quest, :complete_quest, 
-    :create_quest, :save_progress, :exit
-  ]
-  
-  i = 0
-  while i < options.length
-    if area_clicked(button_x, button_y, button_x + BUTTON_WIDTH, button_y + BUTTON_HEIGHT)
-      @select_sound.play(0.6)
-      option = options[i]
-      if option == :exit
-        close
-      elsif option == :save_progress
-        save_progress_to_file('quests.json')
-        @save_file_sound.play(0.6)
-      else
-        @current_view = option
+    button_y = TOP_MARGIN + 80
+    button_x = (width - BUTTON_WIDTH) / 2
+
+    options = [
+      :active_quests, :completed_quests, :accept_quest, :complete_quest, 
+      :create_quest, :save_progress, :exit
+    ]
+
+    i = 0
+    while i < options.length
+      if area_clicked(button_x, button_y, button_x + BUTTON_WIDTH, button_y + BUTTON_HEIGHT)
+        @select_sound.play(0.6)
+        option = options[i]
+        @search_input.text = ""
+        @search_active = false
+        self.text_input = nil
+        if option == :exit
+          close
+        elsif option == :save_progress
+          save_progress_to_file('quests.json')
+          @save_file_sound.play(0.6)
+        else
+          @current_view = option
+          @current_page = 0  # Reset to first page when changing views
+          @filter_difficulty = nil # Reset filter when changing views
+        end
+        break
       end
-      break
+      button_y += BUTTON_HEIGHT + BUTTON_MARGIN
+      i += 1
     end
-    button_y += BUTTON_HEIGHT + BUTTON_MARGIN
-    i += 1
   end
-end
 
   # Handle clicks on quest lists
   def handle_quest_list_click
-  quests = case @current_view
-    when :active_quests then @quests.select { |quest| quest.status == :Active }
-    when :completed_quests then @quests.select { |quest| quest.status == :Completed }
-    when :accept_quest then @quests.select { |quest| quest.status == :NotStarted }
-    when :complete_quest then @quests.select { |quest| quest.status == :Active }
-    else []
-  end
-  
-  return if quests.empty?
-  
-  y_start = TOP_MARGIN + 60
-  quest_height = 70 
-  i = 0
-  while i < quests.length
-    top = y_start + (quest_height * i)
-    bottom = top + quest_height
+    visible_quests = get_visible_quests
     
-    if area_clicked(LEFT_MARGIN, top, width - LEFT_MARGIN, bottom)
-      @selected_quest = quests[i]
-      @select_sound.play(0.6)
-      
-      case @current_view
-      when :accept_quest
-        @accept_quest_sound.play(0.6) 
-        quests[i].status = :Active
-        show_message(quests[i].name + " accepted!")
-        @current_view = :main_menu
-      when :complete_quest
-        quests[i].status = :Completed
-        @complete_quest_sound.play(0.6)
-        show_message(quests[i].name + " completed!")
-        @current_view = :main_menu
-      end
-      break
-    end
-    i += 1
-  end
-end
+    # Calculate pagination bounds
+    total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
+    start_index = @current_page * @quests_per_page
+    end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
-  # Handle clicks on the create quest screen (stubbed)
-  def handle_create_quest_click
-    # Check if Create button clicked
-    if area_clicked(LEFT_MARGIN, TOP_MARGIN + 60 + 50 + 50, 
-                    LEFT_MARGIN + BUTTON_WIDTH, TOP_MARGIN + 60 + 50 + 50 + BUTTON_HEIGHT)
-      show_message("Create quest functionality not implemented yet")
-      @current_view = :main_menu
-    # Check if Cancel button clicked
-    elsif area_clicked(LEFT_MARGIN + BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 60 + 50 + 50, 
-                       LEFT_MARGIN + 2 * BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 60 + 50 + 50 + BUTTON_HEIGHT)
-      @current_view = :main_menu
+    # Check clicks on quest items (only for current page)
+    y = TOP_MARGIN + FILTER_CONTROLS_HEIGHT + 20  # Adjusted starting y position
+    i = start_index
+    while i <= end_index
+      quest_height = 70
+      if area_clicked(LEFT_MARGIN, y, width - LEFT_MARGIN, y + quest_height)
+        @selected_quest = visible_quests[i]
+        @select_sound.play(0.6)
+
+        # Handle quest actions
+        if @current_view == :accept_quest
+          @selected_quest.status = :Active
+          @accept_quest_sound.play(0.6)
+          show_message("Quest accepted: #{@selected_quest.name}")
+        elsif @current_view == :complete_quest
+          @selected_quest.status = :Completed
+          @complete_quest_sound.play(0.6)
+          show_message("Quest completed: #{@selected_quest.name}")
+        end
+        break
+      end
+      y += quest_height
+      i += 1
     end
+
+    # Handle pagination controls
+    pagination_y = y + 20
+
+    # Previous page button
+    if @current_page > 0 && area_clicked(width / 2 - 250, pagination_y + 40, 
+                                        width / 2 - 150, pagination_y + 40 + BUTTON_HEIGHT)
+      @current_page -= 1
+      @select_sound.play(0.6)
+      return
+    end
+
+    # Next page button
+    if @current_page < total_pages - 1 && area_clicked(width / 2 + 150, pagination_y + 40, 
+                                                     width / 2 + 250, pagination_y + 40 + BUTTON_HEIGHT)
+      @current_page += 1
+      @select_sound.play(0.6)
+      return
+    end
+  end
+
+  def handle_create_quest_click
+    # Check input fields using while loop
+    fields = @input_fields.keys
+    i = 0
+    while i < fields.size
+      field = @input_fields[fields[i]]
+      if area_clicked(field[:x], field[:y], field[:x] + field[:width], field[:y] + field[:height])
+        @active_input = fields[i]
+        if fields[i] == :name
+          self.text_input = @name_input
+        elsif fields[i] == :desc
+          self.text_input = @desc_input
+        elsif fields[i] == :diff
+          self.text_input = @diff_input
+        elsif fields[i] == :reward
+          self.text_input = @reward_input
+        end
+        return
+      end
+      i += 1
+    end
+
+    # Check buttons
+    if area_clicked(LEFT_MARGIN, TOP_MARGIN + 200, 
+                   LEFT_MARGIN + BUTTON_WIDTH, TOP_MARGIN + 200 + BUTTON_HEIGHT)
+      create_new_quest
+    elsif area_clicked(LEFT_MARGIN + BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 200, 
+                      LEFT_MARGIN + 2 * BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 200 + BUTTON_HEIGHT)
+      reset_creation_form
+      @current_view = :main_menu
+    else
+      @active_input = nil
+      self.text_input = nil
+    end
+  end
+  
+  def create_new_quest
+    # Validate inputs
+    if @name_input.text.empty?
+      show_message("Quest name cannot be empty!")
+      return
+    end
+    
+    difficulty = @diff_input.text.to_i
+    if difficulty < 1 || difficulty > 5
+      show_message("Difficulty must be between 1-5")
+      return
+    end
+    
+    if @reward_input.text.empty?
+      show_message("Reward cannot be empty!")
+      return
+    end
+    
+    # Create new quest
+    new_quest = Quest.new(
+      @name_input.text,
+      @desc_input.text,
+      difficulty,
+      @reward_input.text,
+      :NotStarted
+    )
+    
+    @quests << new_quest
+    show_message("Quest '#{new_quest.name}' created!")
+    reset_creation_form
+    @current_view = :main_menu
+  end
+
+  def reset_creation_form
+    @name_input.text = ""
+    @desc_input.text = ""
+    @diff_input.text = ""
+    @reward_input.text = ""
+    @active_input = nil
+    self.text_input = nil
   end
 
   # Check if a rectangular area was clicked
@@ -506,14 +885,4 @@ end
   end
 end
 
-
 QuestTracker.new.show
-
-
-# TODO:
-# - Implement quest creation functionality 
-# - Add quest pages to handle large number of quests
-
-#Stretch goals:
-# - Add a search bar for quests
-# - Implement quest filtering and sorting 
