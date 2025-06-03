@@ -59,7 +59,7 @@ class QuestTracker < Gosu::Window
   LEFT_MARGIN = 50
   TOP_MARGIN = 50
   TEXT_OFFSET = 10
-  FILTER_CONTROLS_HEIGHT = 80  # Added constant for filter controls area height
+  FILTER_CONTROLS_HEIGHT = 120  # Added constant for filter controls area height
 
   #==========================================================
   # Initialization and main methods
@@ -316,7 +316,7 @@ class QuestTracker < Gosu::Window
   end
 
   # Draw a list of quests with a title
-  def draw_quest_list(quests, title, y_start = TOP_MARGIN + FILTER_CONTROLS_HEIGHT + 20)  # Increased starting y position
+  def draw_quest_list(quests, title, y_start = TOP_MARGIN + 180)  # Increased starting y position to account for filter controls
     # Draw title
     @title_font.draw_text(title, LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
     
@@ -336,7 +336,7 @@ class QuestTracker < Gosu::Window
     end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
     y = y_start
-    quest_height = 70 
+    quest_height = 90  # Increased quest height for better spacing
     
     # Draw quests for current page
     i = start_index
@@ -369,68 +369,90 @@ class QuestTracker < Gosu::Window
     draw_pagination_controls(y + 20, total_pages)
     
     y
-  end
+end
 
   def draw_search_and_filter_controls(y)
-    # Draw sort controls first (at the top)
-    sort_x = LEFT_MARGIN
-    draw_button("Sort:", sort_x, y, 50, 30)
-    
-    # Sort options
-    sort_options = [
-      { text: "Name", value: :name },
-      { text: "Difficulty", value: :difficulty },
-      { text: "Reward", value: :reward }
-    ]
-    
-    i = 0
-    while i < sort_options.length
-      option = sort_options[i]
-      color = @sort_by == option[:value] ? HIGHLIGHT_COLOR : BUTTON_COLOR
-      Gosu.draw_rect(sort_x + 60 + (i * 100), y, 90, 30, color, ZOrder::BUTTONS - 1)
-      
-      # Add arrow indicator for sort order
-      arrow = ""
-      if @sort_by == option[:value]
-        arrow = @sort_order == :asc ? " ↑" : " ↓"
-      end
-      
-      @font.draw_text(option[:text] + arrow, sort_x + 65 + (i * 100), y + 5, ZOrder::BUTTONS)
-      i += 1
-    end
-    
-    # Draw search bar below sort controls
-    search_y = y + 40
-    search_width = 200
-    Gosu.draw_rect(LEFT_MARGIN, search_y, search_width, 30, TEXT_FIELD_COLOR, ZOrder::BUTTONS - 1)
-    
-    # Draw search text or placeholder
-    text = @search_input.text.empty? ? "Search..." : @search_input.text
-    text_color = @search_input.text.empty? ? Gosu::Color::GRAY : TEXT_COLOR
-    @font.draw_text(text, LEFT_MARGIN + 5, search_y + 5, ZOrder::TEXT, 1.0, 1.0, text_color)
-    
-    # Draw cursor if active
-    if @search_active && (Gosu.milliseconds / 500) % 2 == 0
-      cursor_x = LEFT_MARGIN + 5 + @font.text_width(@search_input.text[0...@search_input.caret_pos])
-      Gosu.draw_rect(cursor_x, search_y + 5, 2, @font.height - 10, TEXT_COLOR, ZOrder::TEXT)
-    end
-    
-    # Draw filter controls below search
-    filter_y = search_y + 40
-    filter_label_width = @font.text_width("Filter:")
-    draw_button("Filter:", LEFT_MARGIN, filter_y, 60, 30)
-    
-    # Difficulty filter buttons
-    diff_x = LEFT_MARGIN + 70
-    i = 0
-    while i <= 5
-      text = i == 0 ? "All" : i.to_s
-      color = @filter_difficulty == (i == 0 ? nil : i) ? HIGHLIGHT_COLOR : BUTTON_COLOR
-      Gosu.draw_rect(diff_x + (i * 40), filter_y, 35, 30, color, ZOrder::BUTTONS - 1)
-      @font.draw_text(text, diff_x + (i * 40) + 5, filter_y + 5, ZOrder::BUTTONS)
-      i += 1
-    end
+  # Draw sort controls first (at the top)
+  sort_label_width = @font.text_width("Sort:") + 10
+  draw_button("Sort:", LEFT_MARGIN, y, sort_label_width, 30)
+  
+  # Sort options - calculate widths based on text
+  sort_options = [
+    { text: "Name", value: :name },
+    { text: "Difficulty", value: :difficulty },
+    { text: "Reward", value: :reward }
+  ]
+  
+  # Calculate button widths including arrow space
+  button_widths = sort_options.map do |option|
+    base_width = @font.text_width(option[:text])
+    if @sort_by == option[:value]
+      base_width + @font.text_width(" ↑") # Account for sort arrow
+    else
+      base_width
+    end + 20 # Padding
   end
+  
+  # Position buttons with spacing
+  x_pos = LEFT_MARGIN + sort_label_width + 20
+  sort_options.each_with_index do |option, i|
+    width = button_widths[i]
+    
+    color = @sort_by == option[:value] ? HIGHLIGHT_COLOR : BUTTON_COLOR
+    Gosu.draw_rect(x_pos, y, width, 30, color, ZOrder::BUTTONS - 1)
+    
+    # Add arrow indicator for sort order
+    text = option[:text]
+    if @sort_by == option[:value]
+      text += @sort_order == :asc ? " ↑" : " ↓"
+    end
+    
+    text_x = x_pos + (width - @font.text_width(text)) / 2
+    @font.draw_text(text, text_x, y + 5, ZOrder::BUTTONS)
+    
+    x_pos += width + 20 # Space between buttons
+  end
+  
+  # Draw search bar below sort controls with more spacing
+  search_y = y + 50 # Increased spacing
+  search_width = 300
+  Gosu.draw_rect(LEFT_MARGIN, search_y, search_width, 30, TEXT_FIELD_COLOR, ZOrder::BUTTONS - 1)
+  
+  # Draw search text or placeholder
+  text = @search_input.text.empty? ? "Search..." : @search_input.text
+  text_color = @search_input.text.empty? ? Gosu::Color::GRAY : TEXT_COLOR
+  @font.draw_text(text, LEFT_MARGIN + 5, search_y + 5, ZOrder::TEXT, 1.0, 1.0, text_color)
+  
+  # Draw cursor if active
+  if @search_active && (Gosu.milliseconds / 500) % 2 == 0
+    cursor_x = LEFT_MARGIN + 5 + @font.text_width(@search_input.text[0...@search_input.caret_pos])
+    Gosu.draw_rect(cursor_x, search_y + 5, 2, @font.height - 10, TEXT_COLOR, ZOrder::TEXT)
+  end
+  
+  # Draw filter controls below search with more spacing
+  filter_y = search_y + 50 # Increased spacing
+  filter_label_width = @font.text_width("Filter:") + 10
+  draw_button("Filter:", LEFT_MARGIN, filter_y, filter_label_width, 30)
+  
+  # Difficulty filter buttons - calculate widths based on text
+  diff_options = ["All", "1", "2", "3", "4", "5"]
+  diff_widths = diff_options.map { |text| @font.text_width(text) + 20 } # Add padding
+  
+  # Position buttons with spacing
+  diff_x = LEFT_MARGIN + filter_label_width + 20
+  diff_options.each_with_index do |text, i|
+    difficulty = i == 0 ? nil : i
+    width = diff_widths[i]
+    
+    color = @filter_difficulty == difficulty ? HIGHLIGHT_COLOR : BUTTON_COLOR
+    Gosu.draw_rect(diff_x, filter_y, width, 30, color, ZOrder::BUTTONS - 1)
+    
+    text_x = diff_x + (width - @font.text_width(text)) / 2
+    @font.draw_text(text, text_x, filter_y + 5, ZOrder::BUTTONS)
+    
+    diff_x += width + 15 # Space between buttons
+  end
+end
 
   def draw_pagination_controls(y, total_pages)
     # Only draw controls if there are multiple pages
@@ -631,82 +653,105 @@ class QuestTracker < Gosu::Window
   end
 
   # Main mouse click handler
-  def handle_mouse_click
-    # Handle search input first
-    mouse_y = TOP_MARGIN + 40
-    
-    # Handle sort clicks (top row)
-    if @current_view != :main_menu && @current_view != :create_quest
-      sort_x = LEFT_MARGIN
-      sort_options = [:name, :difficulty, :reward]
-      
-      i = 0
-      while i < sort_options.length
-        if area_clicked(sort_x + 60 + (i * 100), mouse_y, 
-                       sort_x + 60 + (i * 100) + 90, mouse_y + 30)
-          if @sort_by == sort_options[i]
-            # Toggle sort order if clicking the same sort option
-            @sort_order = @sort_order == :asc ? :desc : :asc
-          else
-            # Default to ascending when changing sort field
-            @sort_by = sort_options[i]
-            @sort_order = :asc
-          end
-          @current_page = 0 # Reset to first page when changing sort
-          return
-        end
-        i += 1
-      end
-      
-      # Handle search input (middle row)
-      search_y = mouse_y + 40
-      if area_clicked(LEFT_MARGIN, search_y, LEFT_MARGIN + 250, search_y + 30)
-        @search_active = true
-        self.text_input = @search_input
-        @current_page = 0 # Reset to first page when searching
-        return
-      else
-        @search_active = false
-        self.text_input = nil
-      end
-      
-      # Handle filter clicks (bottom row)
-      filter_y = search_y + 40
-      diff_x = LEFT_MARGIN + 70
-      
-      i = 0
-      while i <= 5
-        if area_clicked(diff_x + (i * 40), filter_y, 
-                       diff_x + (i * 40) + 35, filter_y + 30)
-          @filter_difficulty = i == 0 ? nil : i
-          @current_page = 0 # Reset to first page when changing filter
-          return
-        end
-        i += 1
-      end
-    end
+def handle_mouse_click
+  mouse_x = self.mouse_x
+  mouse_y = self.mouse_y
 
-    if @current_view == :main_menu
-      handle_main_menu_click
-    elsif @current_view == :active_quests || @current_view == :completed_quests || @current_view == :accept_quest || @current_view == :complete_quest
-      handle_quest_list_click
-    elsif @current_view == :create_quest
-      handle_create_quest_click
+  # Handle search input first
+  search_y = TOP_MARGIN + 90 # Adjusted to match the actual drawn position
+  search_width = 300
+  if area_clicked(LEFT_MARGIN, search_y, LEFT_MARGIN + search_width, search_y + 30)
+    @search_active = true
+    self.text_input = @search_input
+    return
+  else
+    @search_active = false
+    self.text_input = nil if self.text_input == @search_input
+  end
+
+  # Handle sort clicks (top row)
+  if @current_view != :main_menu && @current_view != :create_quest
+    sort_y = TOP_MARGIN + 40 # Adjusted to match the draw position
+    sort_label_width = @font.text_width("Sort:") + 10
+    sort_x = LEFT_MARGIN + sort_label_width + 20
+    
+    sort_options = [
+      { text: "Name", value: :name },
+      { text: "Difficulty", value: :difficulty },
+      { text: "Reward", value: :reward }
+    ]
+    
+    # Calculate button positions based on actual drawing
+    current_x = sort_x
+    i = 0
+    while i < sort_options.length
+      option = sort_options[i]
+      text = option[:text]
+      text += @sort_by == option[:value] ? (@sort_order == :asc ? " ↑" : " ↓") : ""
+      button_width = @font.text_width(text) + 20
+      
+      if area_clicked(current_x, sort_y, current_x + button_width, sort_y + 30)
+        if @sort_by == option[:value]
+          @sort_order = @sort_order == :asc ? :desc : :asc
+        else
+          @sort_by = option[:value]
+          @sort_order = :asc
+        end
+        @current_page = 0 # Reset to first page when changing sort
+        @select_sound.play(0.6)
+        return
+      end
+      
+      current_x += button_width + 20
+      i += 1
     end
     
-    # Back button
-    unless @current_view == :main_menu
-      if area_clicked(width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20, 
-                     width - LEFT_MARGIN, height - 20)
+    # Handle difficulty filter clicks - CORRECTED POSITIONING
+    filter_y = TOP_MARGIN + 140 # This matches the actual drawn position (search_y + 50)
+    filter_label_width = @font.text_width("Filter:") + 10
+    diff_x = LEFT_MARGIN + filter_label_width + 20
+    
+    diff_options = ["All", "1", "2", "3", "4", "5"]
+    
+    i = 0
+    while i < diff_options.length
+      text = diff_options[i]
+      button_width = @font.text_width(text) + 20
+      if area_clicked(diff_x, filter_y, diff_x + button_width, filter_y + 30)
+        @filter_difficulty = i == 0 ? nil : i
+        @current_page = 0 # Reset to first page when changing filter
         @select_sound.play(0.6)
-        @current_view = :main_menu
-        @selected_quest = nil
-        @filter_difficulty = nil # Reset filter when going back
-        @search_input.text = "" # Clear search
+        return
       end
+      diff_x += button_width + 15
+      i += 1
     end
   end
 
+  # Handle main menu clicks
+  if @current_view == :main_menu
+    handle_main_menu_click
+  elsif @current_view == :active_quests || @current_view == :completed_quests || 
+        @current_view == :accept_quest || @current_view == :complete_quest
+    handle_quest_list_click
+  elsif @current_view == :create_quest
+    handle_create_quest_click
+  end
+  
+  # Back button
+  unless @current_view == :main_menu
+    if area_clicked(width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20, 
+                   width - LEFT_MARGIN, height - 20)
+      @select_sound.play(0.6)
+      @current_view = :main_menu
+      @selected_quest = nil
+      @filter_difficulty = nil
+      @search_input.text = ""
+      @search_active = false
+      self.text_input = nil
+    end
+  end
+end
   # Handle clicks on the main menu
   def handle_main_menu_click
     button_y = TOP_MARGIN + 80
@@ -744,57 +789,57 @@ class QuestTracker < Gosu::Window
 
   # Handle clicks on quest lists
   def handle_quest_list_click
-    visible_quests = get_visible_quests
-    
-    # Calculate pagination bounds
-    total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
-    start_index = @current_page * @quests_per_page
-    end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
+  visible_quests = get_visible_quests
+  
+  # Calculate pagination bounds
+  total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
+  start_index = @current_page * @quests_per_page
+  end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
-    # Check clicks on quest items (only for current page)
-    y = TOP_MARGIN + FILTER_CONTROLS_HEIGHT + 20  # Adjusted starting y position
-    i = start_index
-    while i <= end_index
-      quest_height = 70
-      if area_clicked(LEFT_MARGIN, y, width - LEFT_MARGIN, y + quest_height)
-        @selected_quest = visible_quests[i]
-        @select_sound.play(0.6)
+  # Check clicks on quest items (only for current page)
+  y = TOP_MARGIN + 180  # This must match the y_start in draw_quest_list
+  i = start_index
+  while i <= end_index
+    quest_height = 90  # This must match quest_height in draw_quest_list
+    if area_clicked(LEFT_MARGIN, y, width - LEFT_MARGIN, y + quest_height)
+      @selected_quest = visible_quests[i]
+      @select_sound.play(0.6)
 
-        # Handle quest actions
-        if @current_view == :accept_quest
-          @selected_quest.status = :Active
-          @accept_quest_sound.play(0.6)
-          show_message("Quest accepted: #{@selected_quest.name}")
-        elsif @current_view == :complete_quest
-          @selected_quest.status = :Completed
-          @complete_quest_sound.play(0.6)
-          show_message("Quest completed: #{@selected_quest.name}")
-        end
-        break
+      # Handle quest actions
+      if @current_view == :accept_quest
+        @selected_quest.status = :Active
+        @accept_quest_sound.play(0.6)
+        show_message("Quest accepted: #{@selected_quest.name}")
+      elsif @current_view == :complete_quest
+        @selected_quest.status = :Completed
+        @complete_quest_sound.play(0.6)
+        show_message("Quest completed: #{@selected_quest.name}")
       end
-      y += quest_height
-      i += 1
+      break
     end
-
-    # Handle pagination controls
-    pagination_y = y + 20
-
-    # Previous page button
-    if @current_page > 0 && area_clicked(width / 2 - 250, pagination_y + 40, 
-                                        width / 2 - 150, pagination_y + 40 + BUTTON_HEIGHT)
-      @current_page -= 1
-      @select_sound.play(0.6)
-      return
-    end
-
-    # Next page button
-    if @current_page < total_pages - 1 && area_clicked(width / 2 + 150, pagination_y + 40, 
-                                                     width / 2 + 250, pagination_y + 40 + BUTTON_HEIGHT)
-      @current_page += 1
-      @select_sound.play(0.6)
-      return
-    end
+    y += quest_height
+    i += 1
   end
+
+  # Handle pagination controls
+  pagination_y = y + 20
+
+  # Previous page button
+  if @current_page > 0 && area_clicked(width / 2 - 250, pagination_y + 40, 
+                                      width / 2 - 150, pagination_y + 40 + BUTTON_HEIGHT)
+    @current_page -= 1
+    @select_sound.play(0.6)
+    return
+  end
+
+  # Next page button
+  if @current_page < total_pages - 1 && area_clicked(width / 2 + 150, pagination_y + 40, 
+                                                   width / 2 + 250, pagination_y + 40 + BUTTON_HEIGHT)
+    @current_page += 1
+    @select_sound.play(0.6)
+    return
+  end
+end
 
   def handle_create_quest_click
     # Check input fields using while loop

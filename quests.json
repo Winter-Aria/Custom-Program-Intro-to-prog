@@ -109,14 +109,14 @@
     "description": "Save the villagers trapped in the forest by the bandits.",
     "difficulty": 3,
     "reward": "500 Gold",
-    "status": "Active"
+    "status": "Completed"
   },
   {
     "name": "Slay the Dragon",
     "description": "Defeat the dragon terrorizing the northern mountains.",
     "difficulty": 5,
     "reward": "2000 Gold and Dragon Scale Armor",
-    "status": "Active"
+    "status": "Completed"
   },
   {
     "name": "Gather Herbs",
@@ -144,7 +144,7 @@
     "description": "Kill dragon",
     "difficulty": 1,
     "reward": "2000 gold",
-    "status": "Active"
+    "status": "Completed"
   },
   {
     "name": "Hello World",
