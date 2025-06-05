@@ -1,17 +1,23 @@
+#I acknowledge the use of Vs code extensions that provide help using intellisense such as " Ruby Solargraph" with assistance with the code thrugh inline documentation and the comments.
+#I designed this code essentially to work as a quest management system that can properly format quests, i'd imagine it to be a system tha could manage the logc behind quests
+#in a game, and the UI portion is made so it is more intuitive to create quests and manage them from behind the scenes. The file with thequests could be used by another program
+#in order to keep track of quests. 
+
 require 'gosu'
+
 require 'json'
 
 #==============================================================
 # Constants Section
 #==============================================================
 
-TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    # Top Background gradient colour
-BOTTOM_COLOR = Gosu::Color.new(0xFF16213E) # Bottom Background gradient colour
-BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) # Button colour
-TEXT_COLOR = Gosu::Color.new(0xFFE94560)   # Text colour
-HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483) # Highlight colour
-TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)   # Text background colour
-TEXT_FIELD_COLOR = Gosu::Color.new(0x880F3460) # text fields colour
+TOP_COLOR = Gosu::Color.new(0xFF1A1A2E)    
+BOTTOM_COLOR = Gosu::Color.new(0xFF16213E) 
+BUTTON_COLOR = Gosu::Color.new(0xFF0F3460) 
+TEXT_COLOR = Gosu::Color.new(0xFFE94560)   
+HIGHLIGHT_COLOR = Gosu::Color.new(0xDD533483) 
+TEXT_BG_COLOR = Gosu::Color.new(0xAAFFFFFF)  
+TEXT_FIELD_COLOR = Gosu::Color.new(0x880F3460) 
 
 # Z-order constants for drawing layers
 module ZOrder
@@ -59,7 +65,7 @@ class QuestTracker < Gosu::Window
   LEFT_MARGIN = 50
   TOP_MARGIN = 50
   TEXT_OFFSET = 10
-  FILTER_CONTROLS_HEIGHT = 120  # Added constant for filter controls area height
+  FILTER_CONTROLS_HEIGHT = 120  
 
   #==========================================================
   # Initialization and main methods
@@ -73,7 +79,7 @@ class QuestTracker < Gosu::Window
     @title_font = Gosu::Font.new(30, name: "PressStart2P-Regular.ttf")    
     @text = Gosu::TextInput.new
     @quests = []                       
-    @current_view = :main_menu          
+    @current_page_view = :main_menu          
     @selected_quest = nil               
     @message = ""                       
     @message_time = 0                   
@@ -171,7 +177,7 @@ class QuestTracker < Gosu::Window
       quest = quests[i]
       
       # Apply status filter based on current view
-      status_match = case @current_view
+      status_match = case @current_page_view
                     when :active_quests 
                       then quest.status == :Active
                     when :completed_quests 
@@ -209,7 +215,7 @@ class QuestTracker < Gosu::Window
     
     sorted = quests.dup
     
-    # Bubble sort implementation with while loops
+    
     i = 0
     while i < sorted.length - 1
       j = 0
@@ -264,7 +270,7 @@ class QuestTracker < Gosu::Window
   # Display a temporary message
   def show_message(text)
     @message = text
-    @message_time = Gosu.milliseconds + 3000 # Show for 3 seconds
+    @message_time = Gosu.milliseconds + 3000 
   end
 
   # Draw a button with text
@@ -320,7 +326,7 @@ class QuestTracker < Gosu::Window
   end
 
   # Draw a list of quests with a title
-  def draw_quest_list(quests, title, y_start = TOP_MARGIN + 180)  # Increased starting y position to account for filter controls
+  def draw_quest_list(quests, title, y_start = TOP_MARGIN + 180) 
     # Draw title
     @title_font.draw_text(title, LEFT_MARGIN, TOP_MARGIN, ZOrder::TEXT)
     
@@ -340,7 +346,7 @@ class QuestTracker < Gosu::Window
     end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
     y = y_start
-    quest_height = 90  # Increased quest height for better spacing
+    quest_height = 90 
     
     # Draw quests for current page
     i = start_index
@@ -388,37 +394,44 @@ end
   ]
   
   # Calculate button widths including arrow space
-  button_widths = sort_options.map do |option|
+  button_widths = []
+  i = 0
+  while i < sort_options.length
+    option = sort_options[i]
     base_width = @font.text_width(option[:text])
-    if @sort_by == option[:value]
-      base_width + @font.text_width(" ↑") # Account for sort arrow
-    else
-      base_width
-    end + 20 # Padding
+    width = if @sort_by == option[:value]
+              base_width + @font.text_width(" ↑") 
+            else
+             base_width
+            end + 20 
+    button_widths << width
+    i += 1
   end
-  
+
   # Position buttons with spacing
   x_pos = LEFT_MARGIN + sort_label_width + 20
-  sort_options.each_with_index do |option, i|
+  i = 0
+  while i < sort_options.length
+    option = sort_options[i]
     width = button_widths[i]
-    
     color = @sort_by == option[:value] ? HIGHLIGHT_COLOR : BUTTON_COLOR
     Gosu.draw_rect(x_pos, y, width, 30, color, ZOrder::BUTTONS - 1)
-    
+  
     # Add arrow indicator for sort order
     text = option[:text]
     if @sort_by == option[:value]
       text += @sort_order == :asc ? " ↑" : " ↓"
     end
-    
+  
     text_x = x_pos + (width - @font.text_width(text)) / 2
     @font.draw_text(text, text_x, y + 5, ZOrder::BUTTONS)
-    
-    x_pos += width + 20 # Space between buttons
-  end
+  
+   x_pos += width + 20 
+   i += 1
+end
   
   # Draw search bar below sort controls with more spacing
-  search_y = y + 50 # Increased spacing
+  search_y = y + 50 
   search_width = 300
   Gosu.draw_rect(LEFT_MARGIN, search_y, search_width, 30, TEXT_FIELD_COLOR, ZOrder::BUTTONS - 1)
   
@@ -433,28 +446,31 @@ end
     Gosu.draw_rect(cursor_x, search_y + 5, 2, @font.height - 10, TEXT_COLOR, ZOrder::TEXT)
   end
   
-  # Draw filter controls below search with more spacing
-  filter_y = search_y + 50 # Increased spacing
+  
+  filter_y = search_y + 50 
   filter_label_width = @font.text_width("Filter:") + 10
   draw_button("Filter:", LEFT_MARGIN, filter_y, filter_label_width, 30)
   
   # Difficulty filter buttons - calculate widths based on text
   diff_options = ["All", "1", "2", "3", "4", "5"]
-  diff_widths = diff_options.map { |text| @font.text_width(text) + 20 } # Add padding
+  diff_widths = diff_options.map { |text| @font.text_width(text) + 20 } 
   
   # Position buttons with spacing
   diff_x = LEFT_MARGIN + filter_label_width + 20
-  diff_options.each_with_index do |text, i|
+  i = 0
+  while i < diff_options.length
+    text = diff_options[i]
     difficulty = i == 0 ? nil : i
     width = diff_widths[i]
-    
+  
     color = @filter_difficulty == difficulty ? HIGHLIGHT_COLOR : BUTTON_COLOR
     Gosu.draw_rect(diff_x, filter_y, width, 30, color, ZOrder::BUTTONS - 1)
-    
+  
     text_x = diff_x + (width - @font.text_width(text)) / 2
-    @font.draw_text(text, text_x, filter_y + 5, ZOrder::BUTTONS)
-    
+   @font.draw_text(text, text_x, filter_y + 5, ZOrder::BUTTONS)
+  
     diff_x += width + 15 # Space between buttons
+    i += 1
   end
 end
 
@@ -577,33 +593,30 @@ end
     end
   end
   
-  #============================================================
-  # Drawing Methods
-  #============================================================
 
   # Main draw method
   def draw
     draw_background
     
     # Replace case statement with if-elsif chain
-    if @current_view == :main_menu
+    if @current_page_view == :main_menu
       draw_main_menu
-    elsif @current_view == :active_quests
+    elsif @current_page_view == :active_quests
       draw_quest_list(@quests, "Active Quests")
-    elsif @current_view == :completed_quests
+    elsif @current_page_view == :completed_quests
       draw_quest_list(@quests, "Completed Quests")
-    elsif @current_view == :accept_quest
+    elsif @current_page_view == :accept_quest
       draw_quest_list(@quests, "Available Quests")
-    elsif @current_view == :complete_quest
+    elsif @current_page_view == :complete_quest
       draw_quest_list(@quests, "Quests to Complete")
-    elsif @current_view == :create_quest
+    elsif @current_page_view == :create_quest
       draw_create_quest
     end
     
     draw_message
     
     # Draw back button if not on main menu
-    if @current_view != :main_menu
+    if @current_page_view != :main_menu
       draw_button("Back", width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20)
     end
   end
@@ -620,11 +633,11 @@ end
       if @search_active
         @search_active = false
         self.text_input = nil
-      elsif @current_view == :create_quest && @active_input
+      elsif @current_page_view == :create_quest && @active_input
         @active_input = nil
         self.text_input = nil
       end
-    elsif id == Gosu::KbTab && @current_view == :create_quest && @active_input
+    elsif id == Gosu::KbTab && @current_page_view == :create_quest && @active_input
       cycle_input_fields
     end
   end
@@ -674,7 +687,7 @@ def handle_mouse_click
   end
 
   # Handle sort clicks (top row)
-  if @current_view != :main_menu && @current_view != :create_quest
+  if @current_page_view != :main_menu && @current_page_view != :create_quest
     sort_y = TOP_MARGIN + 40 # Adjusted to match the draw position
     sort_label_width = @font.text_width("Sort:") + 10
     sort_x = LEFT_MARGIN + sort_label_width + 20
@@ -701,7 +714,7 @@ def handle_mouse_click
           @sort_by = option[:value]
           @sort_order = :asc
         end
-        @current_page = 0 # Reset to first page when changing sort
+        @current_page = 0 
         @select_sound.play(0.6)
         return
       end
@@ -711,7 +724,7 @@ def handle_mouse_click
     end
     
     # Handle difficulty filter clicks - CORRECTED POSITIONING
-    filter_y = TOP_MARGIN + 140 # This matches the actual drawn position (search_y + 50)
+    filter_y = TOP_MARGIN + 140 
     filter_label_width = @font.text_width("Filter:") + 10
     diff_x = LEFT_MARGIN + filter_label_width + 20
     
@@ -723,7 +736,7 @@ def handle_mouse_click
       button_width = @font.text_width(text) + 20
       if area_clicked(diff_x, filter_y, diff_x + button_width, filter_y + 30)
         @filter_difficulty = i == 0 ? nil : i
-        @current_page = 0 # Reset to first page when changing filter
+        @current_page = 0
         @select_sound.play(0.6)
         return
       end
@@ -733,21 +746,21 @@ def handle_mouse_click
   end
 
   # Handle main menu clicks
-  if @current_view == :main_menu
+  if @current_page_view == :main_menu
     handle_main_menu_click
-  elsif @current_view == :active_quests || @current_view == :completed_quests || 
-        @current_view == :accept_quest || @current_view == :complete_quest
+  elsif @current_page_view == :active_quests || @current_page_view == :completed_quests || 
+        @current_page_view == :accept_quest || @current_page_view == :complete_quest
     handle_quest_list_click
-  elsif @current_view == :create_quest
+  elsif @current_page_view == :create_quest
     handle_create_quest_click
   end
   
   # Back button
-  if @current_view != :main_menu
+  if @current_page_view != :main_menu
     if area_clicked(width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20, 
                    width - LEFT_MARGIN, height - 20)
       @select_sound.play(0.6)
-      @current_view = :main_menu
+      @current_page_view = :main_menu
       @selected_quest = nil
       @filter_difficulty = nil
       @search_input.text = ""
@@ -780,9 +793,9 @@ end
           save_progress_to_file('quests.json')
           @save_file_sound.play(0.6)
         else
-          @current_view = option
-          @current_page = 0  # Reset to first page when changing views
-          @filter_difficulty = nil # Reset filter when changing views
+          @current_page_view = option
+          @current_page = 0  
+          @filter_difficulty = nil 
         end
         break
       end
@@ -801,20 +814,20 @@ end
   end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
   # Check clicks on quest items (only for current page)
-  y = TOP_MARGIN + 180  # This must match the y_start in draw_quest_list
+  y = TOP_MARGIN + 180  
   i = start_index
   while i <= end_index
-    quest_height = 90  # This must match quest_height in draw_quest_list
+    quest_height = 90  
     if area_clicked(LEFT_MARGIN, y, width - LEFT_MARGIN, y + quest_height)
       @selected_quest = visible_quests[i]
       @select_sound.play(0.6)
 
       # Handle quest actions
-      if @current_view == :accept_quest
+      if @current_page_view == :accept_quest
         @selected_quest.status = :Active
         @accept_quest_sound.play(0.6)
         show_message("Quest accepted: #{@selected_quest.name}")
-      elsif @current_view == :complete_quest
+      elsif @current_page_view == :complete_quest
         @selected_quest.status = :Completed
         @complete_quest_sound.play(0.6)
         show_message("Quest completed: #{@selected_quest.name}")
@@ -872,15 +885,17 @@ end
     elsif area_clicked(LEFT_MARGIN + BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 200, 
                       LEFT_MARGIN + 2 * BUTTON_WIDTH + BUTTON_MARGIN, TOP_MARGIN + 200 + BUTTON_HEIGHT)
       reset_creation_form
-      @current_view = :main_menu
+      @current_page_view = :main_menu
     else
       @active_input = nil
       self.text_input = nil
     end
   end
+  #============================================================
+  #Quest Creation Section
+  #============================================================
   
   def create_new_quest
-    # Validate inputs
     if @name_input.text.empty?
       show_message("Quest name cannot be empty!")
       return
@@ -909,7 +924,7 @@ end
     @quests << new_quest
     show_message("Quest '#{new_quest.name}' created!")
     reset_creation_form
-    @current_view = :main_menu
+    @current_page_view = :main_menu
   end
 
   def reset_creation_form
@@ -934,4 +949,3 @@ end
 
 QuestTracker.new.show
 
-#I acknowledge the use of Vs code extensions that provide help using intellisense such as " Ruby Solargraph" with assistance with the code thrugh inline documentation and the comments.
