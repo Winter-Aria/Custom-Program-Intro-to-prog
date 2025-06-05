@@ -172,10 +172,14 @@ class QuestTracker < Gosu::Window
       
       # Apply status filter based on current view
       status_match = case @current_view
-                    when :active_quests then quest.status == :Active
-                    when :completed_quests then quest.status == :Completed
-                    when :accept_quest then quest.status == :NotStarted
-                    when :complete_quest then quest.status == :Active
+                    when :active_quests 
+                      then quest.status == :Active
+                    when :completed_quests 
+                      then quest.status == :Completed
+                    when :accept_quest 
+                      then quest.status == :NotStarted
+                    when :complete_quest 
+                      then quest.status == :Active
                     else true
                     end
       
@@ -599,7 +603,7 @@ end
     draw_message
     
     # Draw back button if not on main menu
-    unless @current_view == :main_menu
+    if @current_view != :main_menu
       draw_button("Back", width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20)
     end
   end
@@ -739,7 +743,7 @@ def handle_mouse_click
   end
   
   # Back button
-  unless @current_view == :main_menu
+  if @current_view != :main_menu
     if area_clicked(width - BUTTON_WIDTH - LEFT_MARGIN, height - BUTTON_HEIGHT - 20, 
                    width - LEFT_MARGIN, height - 20)
       @select_sound.play(0.6)
@@ -825,16 +829,14 @@ end
   pagination_y = y + 20
 
   # Previous page button
-  if @current_page > 0 && area_clicked(width / 2 - 250, pagination_y + 40, 
-                                      width / 2 - 150, pagination_y + 40 + BUTTON_HEIGHT)
+  if @current_page > 0 && area_clicked(width / 2 - 250, pagination_y + 40, width / 2 - 150, pagination_y + 40 + BUTTON_HEIGHT)
     @current_page -= 1
     @select_sound.play(0.6)
     return
   end
 
   # Next page button
-  if @current_page < total_pages - 1 && area_clicked(width / 2 + 150, pagination_y + 40, 
-                                                   width / 2 + 250, pagination_y + 40 + BUTTON_HEIGHT)
+  if @current_page < total_pages - 1 && area_clicked(width / 2 + 150, pagination_y + 40, width / 2 + 250, pagination_y + 40 + BUTTON_HEIGHT)
     @current_page += 1
     @select_sound.play(0.6)
     return
@@ -931,3 +933,5 @@ end
 end
 
 QuestTracker.new.show
+
+#I acknowledge the use of Vs code extensions that provide help using intellisense such as " Ruby Solargraph" with assistance with the code thrugh inline documentation and the comments.
