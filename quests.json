@@ -47,5 +47,12 @@
     "difficulty": 5,
     "reward": "Treasure Map and 1000 Gold",
     "status": "Completed"
+  },
+  {
+    "name": "Hello World",
+    "description": "Say hi ",
+    "difficulty": 1,
+    "reward": "30 gold",
+    "status": "Completed"
   }
 ]

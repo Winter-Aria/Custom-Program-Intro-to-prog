@@ -3,6 +3,8 @@
 #in a game, and the UI portion is made so it is more intuitive to create quests and manage them from behind the scenes. The file with thequests could be used by another program
 #in order to keep track of quests. 
 
+#credits to Toby Fox and Materia Music Publishing for the music used in the quest tracker 
+
 require 'gosu'
 
 require 'json'
@@ -485,12 +487,12 @@ end
 
     # Draw previous button (with increased spacing)
     if @current_page > 0
-      draw_button("< Previous", width / 2 - 250, y + 40)  # Moved further left
+      draw_button("< Previous", width / 2 - 250, y + 40)  
     end
 
     # Draw next button (with increased spacing)
     if @current_page < total_pages - 1
-      draw_button("Next >", width / 2 + 150, y + 40)  # Moved further right
+      draw_button("Next >", width / 2 + 150, y + 40)  
     end
   end
 
@@ -675,7 +677,7 @@ def handle_mouse_click
   mouse_y = self.mouse_y
 
   # Handle search input first
-  search_y = TOP_MARGIN + 90 # Adjusted to match the actual drawn position
+  search_y = TOP_MARGIN + 90
   search_width = 300
   if area_clicked(LEFT_MARGIN, search_y, LEFT_MARGIN + search_width, search_y + 30)
     @search_active = true
@@ -688,7 +690,7 @@ def handle_mouse_click
 
   # Handle sort clicks (top row)
   if @current_page_view != :main_menu && @current_page_view != :create_quest
-    sort_y = TOP_MARGIN + 40 # Adjusted to match the draw position
+    sort_y = TOP_MARGIN + 40 
     sort_label_width = @font.text_width("Sort:") + 10
     sort_x = LEFT_MARGIN + sort_label_width + 20
     
