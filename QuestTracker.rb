@@ -198,10 +198,8 @@ class QuestTracker < Gosu::Window
       search_match = true
       if !@search_input.text.empty?
         search_term = @search_input.text.downcase
-        search_match = quest.name.downcase.include?(search_term) ||
-                       quest.description.downcase.include?(search_term) ||
-                       quest.reward.downcase.include?(search_term) ||
-                       quest.difficulty.to_s.downcase.include?(search_term)
+        search_match = quest.name.downcase.include?(search_term) || quest.description.downcase.include?(search_term) ||
+                       quest.reward.downcase.include?(search_term) || quest.difficulty.to_s.downcase.include?(search_term)
       end
       
       if status_match && difficulty_match && search_match
@@ -209,15 +207,13 @@ class QuestTracker < Gosu::Window
       end
       i += 1
     end
-    filtered
+     return filtered
   end
   
   def sort_quests(quests)
     return quests if quests.empty?
-    
+
     sorted = quests.dup
-    
-    
     i = 0
     while i < sorted.length - 1
       j = 0
@@ -252,7 +248,7 @@ class QuestTracker < Gosu::Window
       i += 1
     end
     
-    sorted
+    return sorted
   end
   
   def get_visible_quests
@@ -262,7 +258,7 @@ class QuestTracker < Gosu::Window
     # Then sort
     sorted = sort_quests(filtered)
     
-    sorted
+    return sorted
   end
 
   #===========================================================
@@ -280,15 +276,15 @@ class QuestTracker < Gosu::Window
     text_width = @font.text_width(text)
     button_width = width || text_width + 40  
     
-    # Draw button background (behind text)
+    # Draw button background 
     Gosu.draw_rect(x, y, button_width, height, BUTTON_COLOR, ZOrder::BUTTONS - 1)
     
-    # Draw button text (on top of background)
+    # Draw button text 
     text_x = x + (button_width - text_width) / 2
     text_y = y + (height - @font.height) / 2
     @font.draw_text(text, text_x, text_y, ZOrder::BUTTONS, 1.0, 1.0, TEXT_COLOR)
-    
-    button_width
+
+    return button_width
   end
 
   # Draw the main menu screen
@@ -312,16 +308,10 @@ class QuestTracker < Gosu::Window
     i = 0
     while i < options.length
       icon = @menu_icons[options[i][:icon]]
-      icon.draw(
-        button_x - 60,                     
-        button_y + (BUTTON_HEIGHT - icon.height * 0.1) / 2,  
-        ZOrder::BUTTONS,                    
-        0.1, 0.1                           
-      )
+      icon.draw(button_x - 60, button_y + (BUTTON_HEIGHT - icon.height * 0.1) / 2, ZOrder::BUTTONS, 0.1, 0.1)
       
       # Draw button text
       draw_button(options[i][:text], button_x, button_y)
-      
       button_y += BUTTON_HEIGHT + BUTTON_MARGIN
       i += 1
     end
@@ -358,9 +348,7 @@ class QuestTracker < Gosu::Window
       
       # Draw highlight if selected
       if quest == @selected_quest
-        Gosu.draw_rect(LEFT_MARGIN, entry_top, 
-                      width - 2 * LEFT_MARGIN, quest_height, 
-                      HIGHLIGHT_COLOR, ZOrder::BUTTONS - 1)
+        Gosu.draw_rect(LEFT_MARGIN, entry_top, width - 2 * LEFT_MARGIN, quest_height, HIGHLIGHT_COLOR, ZOrder::BUTTONS - 1)
       end
       
       # Draw quest text
@@ -381,7 +369,7 @@ class QuestTracker < Gosu::Window
     draw_pagination_controls(y + 20, total_pages)
     
     y
-end
+  end
 
   def draw_search_and_filter_controls(y)
   # Draw sort controls first (at the top)
@@ -471,7 +459,7 @@ end
     text_x = diff_x + (width - @font.text_width(text)) / 2
    @font.draw_text(text, text_x, filter_y + 5, ZOrder::BUTTONS)
   
-    diff_x += width + 15 # Space between buttons
+    diff_x += width + 15 
     i += 1
   end
 end
@@ -481,16 +469,16 @@ end
     return if total_pages <= 1
 
     # Draw page info
-    page_text = "Page #{@current_page + 1} of #{total_pages}"
+    page_text = "Page " + (@current_page + 1).to_s + " of " + total_pages.to_s
     text_width = @font.text_width(page_text)
     @font.draw_text(page_text, (width - text_width) / 2, y, ZOrder::TEXT)
 
-    # Draw previous button (with increased spacing)
+    # Draw previous button
     if @current_page > 0
       draw_button("< Previous", width / 2 - 250, y + 40)  
     end
 
-    # Draw next button (with increased spacing)
+    # Draw next button 
     if @current_page < total_pages - 1
       draw_button("Next >", width / 2 + 150, y + 40)  
     end
@@ -520,7 +508,7 @@ end
       y += @font.height
     end
     
-    y
+    return y
   end
 
   # Draw the create quest screen
@@ -600,7 +588,6 @@ end
   def draw
     draw_background
     
-    # Replace case statement with if-elsif chain
     if @current_page_view == :main_menu
       draw_main_menu
     elsif @current_page_view == :active_quests
@@ -815,7 +802,7 @@ end
   start_index = @current_page * @quests_per_page
   end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
-  # Check clicks on quest items (only for current page)
+  # Check clicks on quest items 
   y = TOP_MARGIN + 180  
   i = start_index
   while i <= end_index
