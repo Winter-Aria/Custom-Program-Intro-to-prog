@@ -43,15 +43,16 @@ class Quest
   end
 
   # Convert quest to a hash for JSON serialization
-  def to_hash
-    {
-      name: name,
-      description: description,
-      difficulty: difficulty,
-      reward: reward,
-      status: status
-    }
-  end
+  def quest_to_hash(quest)
+  {
+    name: quest.name,
+    description: quest.description,
+    difficulty: quest.difficulty,
+    reward: quest.reward,
+    status: quest.status
+  }
+end
+
 end
 
 #==============================================================
@@ -77,18 +78,18 @@ class QuestTracker < Gosu::Window
   def initialize
     super 1024, 768
     self.caption = "Quest Tracking System"
-    @font = Gosu::Font.new(20, name: "PressStart2P-Regular.ttf")          
-    @title_font = Gosu::Font.new(30, name: "PressStart2P-Regular.ttf")    
+    @font = Gosu::Font.new(20, name: "PressStart2P-Regular.ttf")
+    @title_font = Gosu::Font.new(30, name: "PressStart2P-Regular.ttf")
     @text = Gosu::TextInput.new
-    @quests = []                       
-    @current_page_view = :main_menu          
-    @selected_quest = nil               
-    @message = ""                       
-    @message_time = 0                   
-    load_quests_from_file('quests.json') 
+    @quests = []
+    @current_page_view = :main_menu
+    @selected_quest = nil
+    @message = ""
+    @message_time = 0
+    load_quests_from_file('quests.json')
     @bgm = Gosu::Song.new("Sounds/BackgroundMusic.mp3")
-    @bgm.volume = 0.2  
-    @bgm.play(true)  
+    @bgm.volume = 0.2
+    @bgm.play(true)
 
     # Load sound effects
     @select_sound = Gosu::Sample.new("Sounds/Select.wav")
@@ -179,17 +180,17 @@ class QuestTracker < Gosu::Window
       quest = quests[i]
       
       # Apply status filter based on current view
-      status_match = case @current_page_view
-                    when :active_quests 
-                      then quest.status == :Active
-                    when :completed_quests 
-                      then quest.status == :Completed
-                    when :accept_quest 
-                      then quest.status == :NotStarted
-                    when :complete_quest 
-                      then quest.status == :Active
-                    else true
-                    end
+     if @current_page_view == :active_quests
+        status_match = quest.status == :Active
+     elsif @current_page_view == :completed_quests
+          status_match = quest.status == :Completed
+     elsif @current_page_view == :accept_quest
+          status_match = quest.status == :NotStarted
+     elsif @current_page_view == :complete_quest
+          status_match = quest.status == :Active
+     else
+          status_match = true
+     end
       
       # Apply difficulty filter if set
       difficulty_match = @filter_difficulty.nil? || quest.difficulty == @filter_difficulty
@@ -212,7 +213,7 @@ class QuestTracker < Gosu::Window
   
   def sort_quests(quests)
     return quests if quests.empty?
-
+    # Use bubble sort
     sorted = quests.dup
     i = 0
     while i < sorted.length - 1
@@ -220,7 +221,6 @@ class QuestTracker < Gosu::Window
       while j < sorted.length - i - 1
         a = sorted[j]
         b = sorted[j + 1]
-        swap = false
         
         case @sort_by
         when :name
@@ -233,6 +233,7 @@ class QuestTracker < Gosu::Window
           comparison = 0
         end
         
+        swap = false
         if @sort_order == :asc
           swap = comparison > 0
         else
@@ -252,7 +253,7 @@ class QuestTracker < Gosu::Window
   end
   
   def get_visible_quests
-    # First filter by status (based on current view)
+    # First filter by status 
     filtered = filter_quests(@quests)
     
     # Then sort
@@ -441,7 +442,7 @@ end
   filter_label_width = @font.text_width("Filter:") + 10
   draw_button("Filter:", LEFT_MARGIN, filter_y, filter_label_width, 30)
   
-  # Difficulty filter buttons - calculate widths based on text
+  # Difficulty filter buttons 
   diff_options = ["All", "1", "2", "3", "4", "5"]
   diff_widths = diff_options.map { |text| @font.text_width(text) + 20 } 
   
@@ -795,36 +796,36 @@ end
 
   # Handle clicks on quest lists
   def handle_quest_list_click
-  visible_quests = get_visible_quests
+    visible_quests = get_visible_quests
   
-  # Calculate pagination bounds
-  total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
-  start_index = @current_page * @quests_per_page
-  end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
+    # Calculate pagination bounds
+    total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
+    start_index = @current_page * @quests_per_page
+    end_index = [start_index + @quests_per_page, visible_quests.length].min - 1
 
-  # Check clicks on quest items 
-  y = TOP_MARGIN + 180  
-  i = start_index
-  while i <= end_index
-    quest_height = 90  
-    if area_clicked(LEFT_MARGIN, y, width - LEFT_MARGIN, y + quest_height)
-      @selected_quest = visible_quests[i]
-      @select_sound.play(0.6)
+    # Check clicks on quest items 
+    y = TOP_MARGIN + 180  
+    i = start_index
+   while i <= end_index
+      quest_height = 90  
+      if area_clicked(LEFT_MARGIN, y, width - LEFT_MARGIN, y + quest_height)
+        @selected_quest = visible_quests[i]
+        @select_sound.play(0.6)
 
       # Handle quest actions
-      if @current_page_view == :accept_quest
-        @selected_quest.status = :Active
-        @accept_quest_sound.play(0.6)
-        show_message("Quest accepted: #{@selected_quest.name}")
-      elsif @current_page_view == :complete_quest
-        @selected_quest.status = :Completed
-        @complete_quest_sound.play(0.6)
-        show_message("Quest completed: #{@selected_quest.name}")
+        if @current_page_view == :accept_quest
+           @selected_quest.status = :Active
+           @accept_quest_sound.play(0.6)
+           show_message("Quest accepted: #{@selected_quest.name}")
+        elsif @current_page_view == :complete_quest
+          @selected_quest.status = :Completed
+          @complete_quest_sound.play(0.6)
+          show_message("Quest completed: #{@selected_quest.name}")
+        end
+        break
       end
-      break
-    end
-    y += quest_height
-    i += 1
+     y += quest_height
+     i += 1
   end
 
   # Handle pagination controls
