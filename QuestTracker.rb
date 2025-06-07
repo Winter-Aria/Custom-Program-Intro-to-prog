@@ -627,11 +627,11 @@ end
         self.text_input = nil
       end
     elsif id == Gosu::KbTab && @current_page_view == :create_quest && @active_input
-      cycle_input_fields
+      tab_cycle_input_fields
     end
   end
 
-  def cycle_input_fields
+  def tab_cycle_input_fields
     fields = [:name, :desc, :diff, :reward]
     current_index = -1
 
@@ -675,7 +675,7 @@ def handle_mouse_click
     self.text_input = nil if self.text_input == @search_input
   end
 
-  # Handle sort clicks (top row)
+  # Handle sort clicks 
   if @current_page_view != :main_menu && @current_page_view != :create_quest
     sort_y = TOP_MARGIN + 40 
     sort_label_width = @font.text_width("Sort:") + 10
@@ -712,7 +712,7 @@ def handle_mouse_click
       i += 1
     end
     
-    # Handle difficulty filter clicks - CORRECTED POSITIONING
+    # Handle difficulty filter clicks
     filter_y = TOP_MARGIN + 140 
     filter_label_width = @font.text_width("Filter:") + 10
     diff_x = LEFT_MARGIN + filter_label_width + 20
