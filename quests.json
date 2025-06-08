@@ -54,5 +54,12 @@
     "difficulty": 1,
     "reward": "30 gold",
     "status": "Completed"
+  },
+  {
+    "name": "ededed",
+    "description": "edede",
+    "difficulty": 2,
+    "reward": "eee",
+    "status": "Active"
   }
 ]

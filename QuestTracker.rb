@@ -157,12 +157,12 @@ class QuestTracker < Gosu::Window
     end
   end
 
-  # Save quests to a JSON file
+  # Save quests to a JSON file 
   def save_progress_to_file(file_name)
     quest_data = []
     i = 0
     while i < @quests.length
-      quest_data << @quests[i].to_hash
+      quest_data << @quests[i].quest_to_hash(@quests[i])
       i += 1
     end
     File.write(file_name, JSON.pretty_generate(quest_data))
