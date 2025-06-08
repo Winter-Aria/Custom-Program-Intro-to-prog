@@ -60,6 +60,13 @@
     "description": "edede",
     "difficulty": 2,
     "reward": "eee",
-    "status": "Active"
+    "status": "Completed"
+  },
+  {
+    "name": "wsw",
+    "description": "ww",
+    "difficulty": 2,
+    "reward": "11",
+    "status": "Completed"
   }
 ]

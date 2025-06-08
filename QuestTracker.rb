@@ -42,17 +42,6 @@ class Quest
     @status = status
   end
 
-  # Convert quest to a hash for JSON serialization
-  def quest_to_hash(quest)
-  {
-    name: quest.name,
-    description: quest.description,
-    difficulty: quest.difficulty,
-    reward: quest.reward,
-    status: quest.status
-  }
-end
-
 end
 
 #==============================================================
@@ -135,6 +124,18 @@ class QuestTracker < Gosu::Window
   # Data Management Section
   #===========================================================
 
+# Convert quest to a hash for JSON serialization
+  def quest_to_hash(quest)
+  {
+    name: quest.name,
+    description: quest.description,
+    difficulty: quest.difficulty,
+    reward: quest.reward,
+    status: quest.status
+  }
+  end
+
+
   # Load quests from a JSON file
   def load_quests_from_file(file_name)
     if File.exist?(file_name)
@@ -162,7 +163,7 @@ class QuestTracker < Gosu::Window
     quest_data = []
     i = 0
     while i < @quests.length
-      quest_data << @quests[i].quest_to_hash(@quests[i])
+      quest_data << quest_to_hash(@quests[i])
       i += 1
     end
     File.write(file_name, JSON.pretty_generate(quest_data))
@@ -816,11 +817,11 @@ end
         if @current_page_view == :accept_quest
            @selected_quest.status = :Active
            @accept_quest_sound.play(0.6)
-           show_message("Quest accepted: #{@selected_quest.name}")
+           show_message("Quest accepted:" + @selected_quest.name)
         elsif @current_page_view == :complete_quest
           @selected_quest.status = :Completed
           @complete_quest_sound.play(0.6)
-          show_message("Quest completed: #{@selected_quest.name}")
+          show_message("Quest completed:" + @selected_quest.name)
         end
         break
       end
@@ -912,7 +913,7 @@ end
     )
     
     @quests << new_quest
-    show_message("Quest '#{new_quest.name}' created!")
+    show_message("Quest"+ new_quest.name+ " created!")
     reset_creation_form
     @current_page_view = :main_menu
   end
