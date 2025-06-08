@@ -159,7 +159,7 @@ class QuestTracker < Gosu::Window
   end
 
   # Save quests to a JSON file 
-  def save_progress_to_file(file_name)
+  def save_quests_to_file(file_name)
     quest_data = []
     i = 0
     while i < @quests.length
@@ -253,7 +253,7 @@ class QuestTracker < Gosu::Window
     return sorted
   end
   
-  def get_visible_quests
+  def get_sorted_questlist
     # First filter by status 
     filtered = filter_quests(@quests)
     
@@ -327,7 +327,7 @@ class QuestTracker < Gosu::Window
     # Draw search and filter controls
     draw_search_and_filter_controls(TOP_MARGIN + 40)
     
-    visible_quests = get_visible_quests
+    visible_quests = get_sorted_questlist
     
     if visible_quests.empty?
       @font.draw_text("No quests found matching criteria", LEFT_MARGIN, y_start, ZOrder::TEXT)
@@ -781,7 +781,7 @@ end
         if option == :exit
           close
         elsif option == :save_progress
-          save_progress_to_file('quests.json')
+          save_quests_to_file('quests.json')
           @save_file_sound.play(0.6)
         else
           @current_page_view = option
@@ -797,7 +797,7 @@ end
 
   # Handle clicks on quest lists
   def handle_quest_list_click
-    visible_quests = get_visible_quests
+    visible_quests = get_sorted_questlist
   
     # Calculate pagination bounds
     total_pages = (visible_quests.length.to_f / @quests_per_page).ceil
